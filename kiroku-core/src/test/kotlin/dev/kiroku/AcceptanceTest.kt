@@ -241,6 +241,29 @@ class AcceptanceTest {
         }
 
         @Test
+        fun `vendor MakerNote values keep the stored number and add a readable form`() {
+            // Readable forms checked against ExifTool's converted values.
+            fun mn(file: String, group: String, tag: String) = x(Fixtures.et(file)).full.find("MakerNotes:$group:$tag").first()
+            val f = mn("Pentax.jpg", "Pentax", "FNumber")
+            assertEquals(130L, f.value.asLong(), "stored value unchanged")
+            assertEquals("13.0", f.displayValue)
+            assertEquals("1/100", mn("Pentax.jpg", "Pentax", "ExposureTime").displayValue)
+            assertEquals("+0.7", mn("Pentax.jpg", "Pentax", "ExposureCompensation").displayValue)
+            assertEquals("10.0 mm", mn("Pentax.jpg", "Pentax", "FocalLength").displayValue)
+            assertEquals("23", mn("Canon1DmkIII.jpg", "CanonCameraSettings", "MinAperture").displayValue)
+            assertEquals("1/128", mn("Canon1DmkIII.jpg", "CanonShotInfo", "ExposureTime").displayValue)
+            assertEquals("3200", mn("Canon1DmkIII.jpg", "CanonShotInfo", "BaseISO").displayValue)
+            assertEquals("26 C", mn("Canon1DmkIII.jpg", "CanonShotInfo", "CameraTemperature").displayValue)
+            assertEquals("2.8", mn("OlympusE1.jpg", "OlympusEquipment", "MaxAperture").displayValue)
+            assertEquals("+0.8", mn("Sigma.jpg", "Sigma", "ExposureCompensation").displayValue)
+            // Vendor tags that share an EXIF name do not get EXIF descriptions or units.
+            assertNull(mn("Casio.jpg", "Casio", "WhiteBalance").displayValue, "Casio WhiteBalance is not the EXIF enumeration")
+            assertNull(mn("Pentax.jpg", "Pentax", "Sharpness").displayValue)
+            assertNull(mn("Pentax.jpg", "Pentax", "ExposureTime").unit, "stored in 1/100000 s, not seconds")
+            assertEquals("inches", mn("NikonD70.jpg", "NikonPreviewIFD", "ResolutionUnit").displayValue, "a standard TIFF IFD")
+        }
+
+        @Test
         fun `Panasonic RAW white balance presets and distortion info`() {
             // Checked against ExifTool and metadata-extractor.
             val rw2 = x(Fixtures.et("Panasonic.rw2")).full

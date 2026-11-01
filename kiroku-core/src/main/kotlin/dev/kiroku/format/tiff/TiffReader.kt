@@ -258,6 +258,9 @@ internal class TiffReader(
             val inBounds = dataSize >= 0 && source.contains(dataOffset, dataSize)
             val name = makerNoteTags?.get(tag)?.let { MakerNoteTags.byCount(it, cnt) } ?: TiffTags.nameFor(tagTable, tag)
             val tagName = name ?: TiffTags.unknownName(tag)
+            // EXIF descriptions and units only fit tags named by the TIFF/EXIF tables: a vendor tag that shares a name
+            // (Pentax WhiteBalance, Olympus ExposureMode) has its own codes and units.
+            val vendorNamed = makerNoteTags !== TiffTags.main && makerNoteTags?.get(tag) != null
             val value =
                 if (!inBounds || type == null) {
                     NormalizedValue.Null
@@ -286,8 +289,8 @@ internal class TiffReader(
                 tagId = tag.toLong(),
                 original = original,
                 nativeType = NativeType(TypeSystem.TIFF, type?.name ?: "UNKNOWN", typeCode, cnt),
-                displayValue = display(tagName, value),
-                unit = TiffTags.units[tagName],
+                displayValue = if (vendorNamed) null else display(tagName, value),
+                unit = if (vendorNamed) null else TiffTags.units[tagName],
                 known = name != null,
                 sourcePath = path,
             )

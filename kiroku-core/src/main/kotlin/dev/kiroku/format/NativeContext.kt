@@ -93,13 +93,20 @@ internal class NativeContext(val collector: MetadataCollector, val options: Extr
         fidelity = original?.fidelity ?: ValueFidelity.BACKEND_DECODED,
         original = original,
         nativeType = nativeType,
-        displayValue = displayValue,
+        displayValue = displayValue ?: readable(groupPath, tagName, value),
         unit = unit,
         namespace = namespace,
         known = known,
         streamIndex = streamIndex,
         sourcePath = sourcePath,
     )
+
+    /** Readable forms of scaled vendor MakerNote values; the stored value is kept as is. */
+    private fun readable(groupPath: List<String>, tagName: String, value: NormalizedValue): String? = if (groupPath.size >= 2 && groupPath[0] == "MakerNotes") {
+        dev.kiroku.format.tiff.MakerNoteConv.display(groupPath[1], tagName, value, facts["model"])
+    } else {
+        null
+    }
 
     fun warn(code: DiagnosticCode, message: String, cause: Throwable? = null, severity: Severity = Severity.WARNING) {
         collector.diagnostic(code, severity, message, cause = cause)

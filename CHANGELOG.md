@@ -39,8 +39,15 @@
   (`PostScript:ImageData`).
 - Panasonic RW2: `WBInfo2` white-balance presets (light source and RGB levels per entry) and `DistortionInfo`.
 - MP3: the first frame's size in bytes (computed).
+- Readable forms (`displayValue`) for scaled vendor MakerNote values, checked against ExifTool: Canon apertures,
+  exposure times, ISO, measured EV, temperature and focus distances; Pentax exposure time, f-number, focal length,
+  exposure compensation and EV; Olympus lens apertures and colour balances; Kodak, Casio and Panasonic scaled values;
+  Sony image sizes; Sigma label prefixes; Nikon PictureControl adjustments. Stored values are unchanged.
 
 ### Fixed
+- EXIF descriptions and units were applied to vendor MakerNote tags that share an EXIF name, giving wrong readings
+  (Casio `WhiteBalance` "Manual" for Auto, Pentax `Sharpness` "Soft" for Normal, Pentax `ExposureTime` labelled in
+  seconds although stored in 1/100000 s). They now apply only to tags named from the standard TIFF/EXIF tables.
 - XMP packets followed by NUL padding (Fujifilm) were rejected as malformed.
 - MakerNote tag names checked against ExifTool by tag ID and directory (new `scripts/check-makernote-names.py`):
   - Casio type 1 (header-less) notes were read with the type 2 table, so every tag had the wrong name.

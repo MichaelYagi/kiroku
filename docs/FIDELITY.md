@@ -56,6 +56,10 @@ Values up to `ExtractionOptions.rawValueByteLimit` (default 64 KiB) have their b
 3. `DNGPrivateData` (Adobe `MakN`) MakerNotes are parsed using their recorded original offset.
 4. Encrypted vendor structures (Nikon `LensData`/`ShotInfo` v02xx, Sony `0x94xx` ciphers) are kept as raw bytes and
    not decrypted. ExifTool deep mode decodes many of them, and those values are marked `BACKEND_DECODED`.
+5. Vendor values are stored as the camera wrote them (Pentax `FNumber` 130, Canon `MinAperture` 288). Where the
+   encoding is documented and checked against ExifTool, `displayValue` holds the readable form (`13.0`, `23`); the
+   value itself is never rescaled. EXIF descriptions and units are not applied to vendor tags that happen to share an
+   EXIF name, because their codes and units differ.
 
 ## Example
 
