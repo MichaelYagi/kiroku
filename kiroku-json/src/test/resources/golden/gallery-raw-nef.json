@@ -35,6 +35,7 @@
   "camera" : {
     "make" : "NIKON CORPORATION",
     "model" : "NIKON D70",
+    "cameraSerialNumber" : "12345678",
     "software" : "Nikon Capture Editor 4.3.1 W"
   },
   "exposure" : {

@@ -535,6 +535,52 @@
       "knownLimitations": null
     },
     {
+      "path": "media/exiftool/Casio.jpg",
+      "committed": true,
+      "sizeBytes": 1203,
+      "sha256": "c08fed0e193a1549c130d79814d30a3ac3fcd81980e261c4947ff45691628f92",
+      "source": "ExifTool 13.60 distribution, t/images (https://exiftool.org)",
+      "license": "Same terms as Perl (Artistic-1.0-Perl OR GPL-1.0-or-later); test images by Phil Harvey and contributors",
+      "expected": {
+        "exiftool-13.60": {
+          "File:FileType": "JPEG",
+          "File:MIMEType": "image/jpeg",
+          "IFD0:Make": "CASIO",
+          "IFD0:Model": "QV-3000EX",
+          "ExifIFD:DateTimeOriginal": "2000:03:31 10:44:15",
+          "ExifIFD:FNumber": 2,
+          "ExifIFD:ExposureTime": 0.008770006578,
+          "ExifIFD:FocalLength": 13.3,
+          "IFD0:Orientation": 1,
+          "Composite:ImageSize": "8 8"
+        }
+      },
+      "knownLimitations": null
+    },
+    {
+      "path": "media/exiftool/Casio2.jpg",
+      "committed": true,
+      "sizeBytes": 1699,
+      "sha256": "24e19e2eecc5391e63cfbc2a5f17b62a0e86cbb783c98bd294c107a090d6cd02",
+      "source": "ExifTool 13.60 distribution, t/images (https://exiftool.org)",
+      "license": "Same terms as Perl (Artistic-1.0-Perl OR GPL-1.0-or-later); test images by Phil Harvey and contributors",
+      "expected": {
+        "exiftool-13.60": {
+          "File:FileType": "JPEG",
+          "File:MIMEType": "image/jpeg",
+          "IFD0:Make": "CASIO COMPUTER CO.,LTD",
+          "IFD0:Model": "EX-Z3",
+          "ExifIFD:DateTimeOriginal": "2003:06:18 16:54:37",
+          "ExifIFD:FNumber": 3.9,
+          "ExifIFD:ExposureTime": 0.0125,
+          "ExifIFD:FocalLength": 12.2,
+          "IFD0:Orientation": 1,
+          "Composite:ImageSize": "8 8"
+        }
+      },
+      "knownLimitations": null
+    },
+    {
       "path": "media/exiftool/DNG.dng",
       "committed": true,
       "sizeBytes": 13662,
@@ -854,6 +900,31 @@
           "ExifIFD:FocalLength": 7,
           "IFD0:Orientation": 1,
           "Composite:ImageSize": "8 8"
+        }
+      },
+      "knownLimitations": null
+    },
+    {
+      "path": "media/exiftool/OlympusE1.jpg",
+      "committed": true,
+      "sizeBytes": 7365,
+      "sha256": "7d76d6421265420326bb43845e15732c45d1ffe5866df2a63553ae0bc8e228f8",
+      "source": "ExifTool 13.60 distribution, t/images (https://exiftool.org)",
+      "license": "Same terms as Perl (Artistic-1.0-Perl OR GPL-1.0-or-later); test images by Phil Harvey and contributors",
+      "expected": {
+        "exiftool-13.60": {
+          "File:FileType": "JPEG",
+          "File:MIMEType": "image/jpeg",
+          "IFD0:Make": "OLYMPUS CORPORATION",
+          "IFD0:Model": "E-1",
+          "ExifIFD:DateTimeOriginal": "2005:01:05 10:53:41",
+          "ExifIFD:ISO": 400,
+          "ExifIFD:FNumber": 4.5,
+          "ExifIFD:ExposureTime": 0.01,
+          "ExifIFD:FocalLength": 20,
+          "IFD0:Orientation": 1,
+          "Composite:ImageSize": "8 8",
+          "Composite:LensID": "0 05 00"
         }
       },
       "knownLimitations": null

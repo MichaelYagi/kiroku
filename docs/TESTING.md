@@ -26,6 +26,13 @@ KIROKU_UPDATE_GOLDEN=true ./gradlew :kiroku-json:test   # regenerate JSON golden
 | `kiroku-json` tests | Golden gallery snapshots, typed and versioned full JSON, determinism, omitting bytes, null policy, every emitted field declared in the JSON Schema |
 | `examples` tests | Shashin adapter mapping for photo, RAW and video, null mapping for stripped files, warnings |
 
+## MakerNote name check
+
+`scripts/check-makernote-names.py <kiroku-cli> <exiftool> <files...>` compares, per MakerNote directory and tag ID, the
+name ExifTool gives a tag with the name Kiroku gives it. Run it after editing `MakerNoteTags.kt`. Expected differences
+are ExifTool's model or version suffixes (`ShotInfo02xx`, `ColorData4`), its `…IFD` names for Olympus sub-directory
+pointers, and tags ExifTool decodes only for some models.
+
 ## Fixtures
 
 `fixtures/manifest.json` records path, source, licence, SHA-256, known limitations and **independent ExifTool reads**

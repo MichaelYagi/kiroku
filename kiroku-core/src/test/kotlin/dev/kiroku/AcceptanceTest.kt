@@ -8,6 +8,7 @@ import dev.kiroku.model.MediaKind
 import dev.kiroku.model.Rational
 import dev.kiroku.model.StreamKind
 import dev.kiroku.model.asDouble
+import dev.kiroku.model.asList
 import dev.kiroku.model.asLong
 import dev.kiroku.model.asText
 import dev.kiroku.testing.Fixtures
@@ -376,6 +377,24 @@ class AcceptanceTest {
 
     @Nested
     inner class Raw {
+        @Test
+        fun `MakerNote tags carry the names and values ExifTool gives them`() {
+            // Regressions found by scripts/check-makernote-names.py; expected values from ExifTool 13.60.
+            fun mn(name: String, file: String) = x(Fixtures.et(file)).full.observations.filter { it.groupPath[0] == "MakerNotes" && it.tagName == name }
+
+            // Casio type 1 (no header) and type 2 ("QVC") use different tables.
+            assertEquals(3L, mn("FocusMode", "Casio.jpg").single().value.asLong())
+            assertEquals(1L, mn("RecordingMode", "Casio.jpg").single().value.asLong())
+            assertEquals("0302280945", mn("FirmwareDate", "Casio2.jpg").single().value.asText(), "NUL-separated parts joined")
+            assertTrue(mn("FocusMode", "Casio2.jpg").isNotEmpty(), "0x3003 is FocusMode, not FocusMode2")
+            // Olympus CameraSettings: 0x0526 PictureModeTone, 0x0527 NoiseFilter; 0x0502 depends on the value count.
+            assertEquals(1, mn("WhiteBalanceBracket", "OlympusE1.jpg").size)
+            assertTrue(mn("WhiteBalanceFineTune", "OlympusE1.jpg").isEmpty())
+            // Panasonic FirmwareVersion (0x0002) shares its ID with InteropVersion but is four binary bytes.
+            assertEquals(listOf(0L, 1L, 0L, 8L), mn("FirmwareVersion", "Panasonic.jpg").single().value.asList().map { it.asLong() })
+            assertEquals("0100", x(Fixtures.et("Panasonic.jpg")).full.find("EXIF:InteropIFD:InteropVersion").single().value.asText())
+        }
+
         @Test
         fun `Canon CR3 is RAW with EXIF, Canon MakerNotes and no video fields`() {
             // Values checked against ExifTool 13.60.

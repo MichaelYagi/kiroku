@@ -256,7 +256,7 @@ internal class TiffReader(
                 }
             val dataSize = if (type == null) inlineSize.toLong() else size
             val inBounds = dataSize >= 0 && source.contains(dataOffset, dataSize)
-            val name = makerNoteTags?.get(tag) ?: TiffTags.nameFor(tagTable, tag)
+            val name = makerNoteTags?.get(tag)?.let { MakerNoteTags.byCount(it, cnt) } ?: TiffTags.nameFor(tagTable, tag)
             val tagName = name ?: TiffTags.unknownName(tag)
             val value =
                 if (!inBounds || type == null) {
@@ -530,7 +530,14 @@ internal class TiffReader(
         return when (type) {
             TiffType.ASCII, TiffType.UTF8 -> {
                 if (size > ctx.limits.maxStringLength) return NormalizedValue.Binary(size)
-                text(source.read(offset, size.toInt()))
+                val b = source.read(offset, size.toInt())
+                // Casio stores FirmwareDate as NUL-separated parts ("0302", "2809", "45"); join them as ExifTool does.
+                // Every other ASCII value ends at its first NUL.
+                if (tagName == "FirmwareDate" && ctx.facts["makernote.vendor"] == "Casio") {
+                    NormalizedValue.Text(String(b, Charsets.ISO_8859_1).replace("\u0000", ""))
+                } else {
+                    text(b)
+                }
             }
 
             TiffType.UNDEFINED -> decodeUndefined(tag, tagName, offset, size, bigEndian)
@@ -553,7 +560,19 @@ internal class TiffReader(
     private fun decodeUndefined(tag: Int, tagName: String, offset: Long, size: Long, bigEndian: Boolean): NormalizedValue {
         if (size > ctx.limits.maxStringLength) return NormalizedValue.Binary(size)
         return when {
-            tag in VERSION_TAGS && size == 4L -> NormalizedValue.Text(source.ascii(offset, 4))
+            // ExifVersion, FlashpixVersion and InteropVersion are four ASCII digits. Match by name: vendor tags reuse these
+            // IDs (Panasonic 0x0002 is FirmwareVersion, four binary bytes).
+            tagName in VERSION_TAG_NAMES && size == 4L -> NormalizedValue.Text(source.ascii(offset, 4))
+
+            // Short undefined values that vendors use for version numbers and similar byte tuples.
+            tagName.endsWith("Version") && size in 2L..8L -> {
+                val b = source.read(offset, size.toInt())
+                if (b.all { it in 0x20..0x7E }) {
+                    NormalizedValue.Text(String(b, Charsets.ISO_8859_1))
+                } else {
+                    NormalizedValue.list(b.map { NormalizedValue.Integer(it.toLong() and 0xFF) })
+                }
+            }
 
             tag == 0x9286 || tag == 0x001B && tagName == "GPSProcessingMethod" || tag == 0x001C && tagName == "GPSAreaInformation" ->
                 decodeCharsetText(source.read(offset, size.toInt()), bigEndian) ?: NormalizedValue.Binary(size)
@@ -612,7 +631,7 @@ internal class TiffReader(
     companion object {
         private const val MAX_CHAIN = 512
         private const val MAX_DECODED_COMPONENTS = 4096
-        private val VERSION_TAGS = setOf(0x9000, 0xA000, 0x0002)
+        private val VERSION_TAG_NAMES = setOf("ExifVersion", "FlashpixVersion", "InteropVersion")
         private val XP_TAGS = setOf(0x9C9B, 0x9C9C, 0x9C9D, 0x9C9E, 0x9C9F)
 
         fun orderOf(bigEndian: Boolean): ByteOrderMark = if (bigEndian) ByteOrderMark.BIG_ENDIAN else ByteOrderMark.LITTLE_ENDIAN

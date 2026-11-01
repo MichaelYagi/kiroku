@@ -167,7 +167,7 @@ internal object MakerNoteTags {
             0x009C to "SceneAssist",
             0x009D to "DateStampMode",
             0x009E to "RetouchHistory",
-            0x00A0 to "SerialNumber2",
+            0x00A0 to "SerialNumber",
             0x00A2 to "ImageDataSize",
             0x00A5 to "ImageCount",
             0x00A6 to "DeletedImageCount",
@@ -346,7 +346,7 @@ internal object MakerNoteTags {
             0x0401 to "FlashExposureComp",
             0x0500 to "WhiteBalance2",
             0x0501 to "WhiteBalanceTemperature",
-            0x0502 to "WhiteBalanceBracket",
+            0x0502 to "WhiteBalanceFineTune",
             0x0503 to "CustomSaturation",
             0x0504 to "ModifiedSaturation",
             0x0505 to "ContrastSetting",
@@ -360,7 +360,12 @@ internal object MakerNoteTags {
             0x050F to "Gradation",
             0x0520 to "PictureMode",
             0x0521 to "PictureModeSaturation",
-            0x0527 to "PictureModeTone",
+            0x0522 to "PictureModeHue",
+            0x0523 to "PictureModeContrast",
+            0x0524 to "PictureModeSharpness",
+            0x0525 to "PictureModeBWFilter",
+            0x0526 to "PictureModeTone",
+            0x0527 to "NoiseFilter",
             0x0600 to "DriveMode",
             0x0601 to "PanoramaMode",
             0x0603 to "ImageQuality2",
@@ -660,7 +665,6 @@ internal object MakerNoteTags {
             0x1300 to "BlurWarning",
             0x1301 to "FocusWarning",
             0x1302 to "ExposureWarning",
-            0x1304 to "GEImageSize",
             0x1400 to "DynamicRange",
             0x1401 to "FilmMode",
             0x1402 to "DynamicRangeSetting",
@@ -942,6 +946,25 @@ internal object MakerNoteTags {
             0x005A to "Apple_0x005a",
         )
 
+    // Casio type 1 (header-less MakerNote, older QV and EX models).
+    private val casioType1 =
+        mapOf(
+            0x0001 to "RecordingMode",
+            0x0002 to "Quality",
+            0x0003 to "FocusMode",
+            0x0004 to "FlashMode",
+            0x0005 to "FlashIntensity",
+            0x0006 to "ObjectDistance",
+            0x0007 to "WhiteBalance",
+            0x000A to "DigitalZoom",
+            0x000B to "Sharpness",
+            0x000C to "Contrast",
+            0x000D to "Saturation",
+            0x0014 to "ISO",
+            0x0E00 to "PrintIM",
+        )
+
+    // Casio type 2 ("QVC" header).
     private val casio =
         mapOf(
             0x0002 to "PreviewImageSize",
@@ -960,7 +983,7 @@ internal object MakerNoteTags {
             0x2000 to "PreviewImage",
             0x2001 to "FirmwareDate",
             0x2011 to "WhiteBalanceBias",
-            0x2012 to "WhiteBalance2",
+            0x2012 to "WhiteBalance",
             0x2021 to "AFPointPosition",
             0x2022 to "ObjectDistance",
             0x2034 to "FlashDistance",
@@ -970,14 +993,14 @@ internal object MakerNoteTags {
             0x3000 to "RecordMode",
             0x3001 to "ReleaseMode",
             0x3002 to "Quality",
-            0x3003 to "FocusMode2",
+            0x3003 to "FocusMode",
             0x3006 to "HometownCity",
             0x3007 to "BestShotMode",
             0x3008 to "AutoISO",
             0x3009 to "AFMode",
-            0x3011 to "Sharpness2",
-            0x3012 to "Contrast2",
-            0x3013 to "Saturation2",
+            0x3011 to "Sharpness",
+            0x3012 to "Contrast",
+            0x3013 to "Saturation",
             0x3014 to "ISO",
             0x3015 to "ColorMode",
             0x3016 to "Enhancement",
@@ -1038,6 +1061,14 @@ internal object MakerNoteTags {
     /** Leica MakerNotes reuse Panasonic tags for the Panasonic-built (RWL) models. */
     private val leica = panasonic
 
+    /** Tags whose meaning depends on the stored value count (older and newer models share the tag ID). */
+    fun byCount(name: String, count: Long): String = when {
+        // Olympus CameraSettings 0x0502: one value on the E-1 era models, two (fine-tune pair) on later ones.
+        name == "WhiteBalanceFineTune" && count == 1L -> "WhiteBalanceBracket"
+
+        else -> name
+    }
+
     fun forVendor(vendor: String): Map<Int, String> = when (vendor) {
         "Canon" -> canon
         "Nikon" -> nikon
@@ -1050,6 +1081,7 @@ internal object MakerNoteTags {
         "Samsung" -> samsung
         "Apple" -> apple
         "Casio" -> casio
+        "CasioType1" -> casioType1
         "Sigma" -> sigma
         else -> emptyMap()
     }

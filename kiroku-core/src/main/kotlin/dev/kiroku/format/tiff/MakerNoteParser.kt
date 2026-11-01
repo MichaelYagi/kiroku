@@ -21,7 +21,8 @@ internal class MakerNoteParser(
     private val source: ByteSource,
     private val header: TiffHeader,
 ) {
-    internal data class Layout(val vendor: String, val ifdOffset: Long, val base: Long, val bigEndian: Boolean)
+    /** [vendor] names the group (`MakerNotes:<vendor>`); [table] selects the tag table when a vendor has several layouts. */
+    internal data class Layout(val vendor: String, val ifdOffset: Long, val base: Long, val bigEndian: Boolean, val table: String = vendor)
 
     fun parse(offset: Long, length: Long, path: String, depth: Int, parentBigEndian: Boolean, tiffBase: Long = 0) {
         if (length < 8 || !source.contains(offset, length)) return
@@ -73,8 +74,8 @@ internal class MakerNoteParser(
             base = chosen.base,
             bigEndian = chosen.bigEndian,
             groupFamily0 = "MakerNotes",
-            makerNoteTags = MakerNoteTags.forVendor(chosen.vendor),
-            subIfdTags = MakerNoteTags.subIfdTags(chosen.vendor),
+            makerNoteTags = MakerNoteTags.forVendor(chosen.table),
+            subIfdTags = MakerNoteTags.subIfdTags(chosen.table),
         )
     }
 
@@ -169,9 +170,11 @@ internal class MakerNoteParser(
                 else -> "Unknown"
             }
         if (out.isEmpty()) {
-            if (vendor == "Samsung") out += Layout(vendor, mn, mn, parentBe)
-            out += Layout(vendor, mn, tiffBase, parentBe)
-            if (vendor != "Samsung") out += Layout(vendor, mn, mn, parentBe)
+            // Casio's header-less notes are the older "type 1" layout; "QVC" notes (type 2) are matched above.
+            val table = if (vendor == "Casio") "CasioType1" else vendor
+            if (vendor == "Samsung") out += Layout(vendor, mn, mn, parentBe, table)
+            out += Layout(vendor, mn, tiffBase, parentBe, table)
+            if (vendor != "Samsung") out += Layout(vendor, mn, mn, parentBe, table)
         }
         return out
     }

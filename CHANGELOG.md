@@ -27,6 +27,16 @@
 
 ### Fixed
 - XMP packets followed by NUL padding (Fujifilm) were rejected as malformed.
+- MakerNote tag names checked against ExifTool by tag ID and directory (new `scripts/check-makernote-names.py`):
+  - Casio type 1 (header-less) notes were read with the type 2 table, so every tag had the wrong name.
+  - Casio type 2 `WhiteBalance`, `FocusMode`, `Sharpness`, `Contrast`, `Saturation` and Nikon 0x00A0 `SerialNumber`
+    had a spurious "2" suffix.
+  - Olympus CameraSettings: 0x0527 is `NoiseFilter` (was labelled `PictureModeTone`, which is 0x0526); 0x0502 is
+    `WhiteBalanceFineTune` or, with one value, `WhiteBalanceBracket`; 0x0522-0x0526 are now named.
+  - FujiFilm 0x1304 was labelled `GEImageSize`, a name that only applies to GE cameras.
+- Panasonic `FirmwareVersion` (0x0002) was decoded as text because it shares its ID with `InteropVersion`. Version
+  tags are now matched by name, and non-printable version bytes are kept as numbers.
+- Casio `FirmwareDate` kept only its first NUL-separated part.
 
 ## 0.1.1 (2026-10-31)
 
