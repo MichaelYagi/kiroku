@@ -1,0 +1,125 @@
+package dev.kiroku.format.tiff
+
+import dev.kiroku.format.NativeContext
+import dev.kiroku.io.ByteSource
+import dev.kiroku.model.NativeType
+import dev.kiroku.model.NormalizedValue
+import dev.kiroku.model.TypeSystem
+
+/**
+ * Vendor MakerNote tags that pack many settings into one array of 16-bit values (Canon CameraSettings, ShotInfo, ...).
+ * Each listed element becomes its own observation in group `MakerNotes:<array name>`, with the element index as its tag
+ * ID, its native type and its original bytes. The stored value is kept; unit conversions belong to the gallery layer.
+ * Names follow ExifTool; unlisted elements are not reported (the whole array stays as its own observation).
+ */
+internal object MakerNoteArrays {
+    enum class Format(val size: Int) { INT16S(2), INT16U(2), INT32U(4) }
+
+    class Field(val index: Int, val name: String, val format: Format)
+
+    /** [unit] is the byte size of one index step; element `i` starts at `i * unit`. */
+    class Table(val fields: List<Field>, val unit: Int = 2)
+
+    private fun table(default: Format, vararg entries: Pair<Int, String>, overrides: Map<Int, Format> = emptyMap()) =
+        Table(entries.map { (i, n) -> Field(i, n, overrides[i] ?: default) })
+
+    private val canonCameraSettings =
+        table(
+            Format.INT16S,
+            1 to "MacroMode", 2 to "SelfTimer", 3 to "Quality", 4 to "CanonFlashMode", 5 to "ContinuousDrive", 7 to "FocusMode",
+            9 to "RecordMode", 10 to "CanonImageSize", 11 to "EasyMode", 12 to "DigitalZoom", 13 to "Contrast", 14 to "Saturation",
+            15 to "Sharpness", 16 to "CameraISO", 17 to "MeteringMode", 18 to "FocusRange", 19 to "AFPoint", 20 to "CanonExposureMode",
+            22 to "LensType", 23 to "MaxFocalLength", 24 to "MinFocalLength", 25 to "FocalUnits", 26 to "MaxAperture", 27 to "MinAperture",
+            28 to "FlashModel", 29 to "FlashBits", 32 to "FocusContinuous", 33 to "AESetting", 34 to "ImageStabilization",
+            35 to "DisplayAperture", 36 to "ZoomSourceWidth", 37 to "ZoomTargetWidth", 39 to "SpotMeteringMode", 40 to "PhotoEffect",
+            41 to "ManualFlashOutput", 42 to "ColorTone", 46 to "SRAWQuality", 50 to "FocusBracketing", 51 to "Clarity", 52 to "HDR-PQ",
+            overrides = mapOf(22 to Format.INT16U, 23 to Format.INT16U, 24 to Format.INT16U, 29 to Format.INT16U),
+        )
+
+    private val canonFocalLength =
+        // Elements 2 and 3 are the sensor size only on some models (ExifTool decodes them per model), so they are not named.
+        table(Format.INT16U, 0 to "FocalType", 1 to "FocalLength")
+
+    private val canonShotInfo =
+        table(
+            Format.INT16S,
+            1 to "AutoISO", 2 to "BaseISO", 3 to "MeasuredEV", 4 to "TargetAperture", 5 to "TargetExposureTime",
+            6 to "ExposureCompensation", 7 to "WhiteBalance", 8 to "SlowShutter", 9 to "SequenceNumber", 10 to "OpticalZoomCode",
+            12 to "CameraTemperature", 13 to "FlashGuideNumber", 14 to "AFPointsInFocus", 15 to "FlashExposureComp",
+            16 to "AutoExposureBracketing", 17 to "AEBBracketValue", 18 to "ControlMode", 19 to "FocusDistanceUpper",
+            20 to "FocusDistanceLower", 21 to "FNumber", 22 to "ExposureTime", 23 to "MeasuredEV2", 24 to "BulbDuration",
+            26 to "CameraType", 27 to "AutoRotate", 28 to "NDFilter", 29 to "SelfTimer2", 33 to "FlashOutput",
+            overrides = mapOf(19 to Format.INT16U, 20 to Format.INT16U),
+        )
+
+    private val canonPanorama = table(Format.INT16S, 2 to "PanoramaFrameNumber", 5 to "PanoramaDirection")
+
+    private val canonFileInfo =
+        table(
+            Format.INT16S,
+            // Elements 1 (file number or shutter count) and 16 (macro magnification or exit pupil) depend on the model.
+            3 to "BracketMode", 4 to "BracketValue", 5 to "BracketShotNumber", 6 to "RawJpgQuality",
+            7 to "RawJpgSize", 8 to "LongExposureNoiseReduction2", 9 to "WBBracketMode", 12 to "WBBracketValueAB",
+            13 to "WBBracketValueGM", 14 to "FilterEffect", 15 to "ToningEffect", 19 to "LiveViewShooting",
+            20 to "FocusDistanceUpper", 21 to "FocusDistanceLower", 23 to "ShutterMode", 25 to "FlashExposureLock", 32 to "AntiFlicker",
+            61 to "RFLensType",
+            overrides = mapOf(20 to Format.INT16U, 21 to Format.INT16U, 61 to Format.INT16U),
+        )
+
+    // The fixed-size head of the AF info records; the per-point arrays that follow depend on NumAFPoints.
+    private val canonAFInfo =
+        table(
+            Format.INT16U,
+            0 to "NumAFPoints",
+            1 to "ValidAFPoints",
+            2 to "CanonImageWidth",
+            3 to "CanonImageHeight",
+            4 to "AFImageWidth",
+            5 to "AFImageHeight",
+        )
+
+    private val canonAFInfo2 =
+        table(
+            Format.INT16U,
+            0 to "AFInfoSize", 1 to "AFAreaMode", 2 to "NumAFPoints", 3 to "ValidAFPoints", 4 to "CanonImageWidth",
+            5 to "CanonImageHeight", 6 to "AFImageWidth", 7 to "AFImageHeight",
+        )
+
+    private val tables: Map<Pair<String, Int>, Pair<String, Table>> =
+        mapOf(
+            ("Canon" to 0x0001) to ("CanonCameraSettings" to canonCameraSettings),
+            ("Canon" to 0x0002) to ("CanonFocalLength" to canonFocalLength),
+            ("Canon" to 0x0004) to ("CanonShotInfo" to canonShotInfo),
+            ("Canon" to 0x0005) to ("CanonPanorama" to canonPanorama),
+            ("Canon" to 0x0012) to ("CanonAFInfo" to canonAFInfo),
+            ("Canon" to 0x0026) to ("CanonAFInfo2" to canonAFInfo2),
+            ("Canon" to 0x0093) to ("CanonFileInfo" to canonFileInfo),
+        )
+
+    fun decode(ctx: NativeContext, s: ByteSource, vendor: String, entry: IfdEntry, bigEndian: Boolean, path: String) {
+        if (!entry.inBounds || entry.dataSize < 2) return
+        val (name, t) = tables[vendor to entry.tag] ?: return
+        val group = listOf("MakerNotes", name)
+        val order = TiffReader.orderOf(bigEndian)
+        for (f in t.fields) {
+            val off = f.index.toLong() * t.unit
+            if (off + f.format.size > entry.dataSize) continue
+            val at = entry.dataOffset + off
+            val v =
+                when (f.format) {
+                    Format.INT16S -> s.u16(at, bigEndian).toShort().toLong()
+                    Format.INT16U -> s.u16(at, bigEndian).toLong()
+                    Format.INT32U -> s.u32(at, bigEndian)
+                }
+            ctx.observe(
+                group,
+                f.name,
+                NormalizedValue.Integer(v),
+                tagId = f.index.toLong(),
+                original = ctx.original(s, at, f.format.size.toLong(), order),
+                nativeType = NativeType(TypeSystem.TIFF, f.format.name.lowercase(), null, 1),
+                sourcePath = "$path/$name",
+            )
+        }
+    }
+}

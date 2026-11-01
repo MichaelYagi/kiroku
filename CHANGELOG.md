@@ -16,6 +16,10 @@
   applies to the Photoshop block in JPEG and TIFF files.
 - XMP: `XMPToolkit` (including the pre-XMP-3 `x:xaptk` form) and `rdf:about` are reported.
 - `DiagnosticCode.ESTIMATED_VALUE` for values that are estimated rather than read.
+- Canon MakerNote arrays decoded element by element (groups `MakerNotes:CanonCameraSettings`, `CanonShotInfo`,
+  `CanonFocalLength`, `CanonPanorama`, `CanonFileInfo`, `CanonAFInfo`, `CanonAFInfo2`): each element keeps its index as
+  tag ID, its native type and its original bytes. Verified element by element against ExifTool with
+  `scripts/check-makernote-arrays.py`; model-dependent elements are left unnamed.
 - **GeoTIFF** keys (group `GeoTiff`): version, model and raster type, geographic/projected CS, datum, ellipsoid,
   projection parameters, from the key directory and its double and ASCII parameter tags. The GeoTIFF TIFF tags
   (PixelScale, ModelTiePoint, ModelTransform) are now named.

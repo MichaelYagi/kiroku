@@ -33,6 +33,10 @@ name ExifTool gives a tag with the name Kiroku gives it. Run it after editing `M
 are ExifTool's model or version suffixes (`ShotInfo02xx`, `ColorData4`), its `…IFD` names for Olympus sub-directory
 pointers, and tags ExifTool decodes only for some models.
 
+`scripts/check-makernote-arrays.py` does the same for binary arrays (Canon CameraSettings, ShotInfo, ...): index,
+name and stored value per element. Expected differences: elements Kiroku leaves unnamed because their meaning depends on
+the camera model, and elements ExifTool converts or hides (for example `FocusDistanceLower` when the upper bound is 0).
+
 ## Fixtures
 
 `fixtures/manifest.json` records path, source, licence, SHA-256, known limitations and **independent ExifTool reads**

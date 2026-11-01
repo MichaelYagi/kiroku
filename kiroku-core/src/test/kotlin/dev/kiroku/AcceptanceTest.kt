@@ -390,6 +390,13 @@ class AcceptanceTest {
             // Olympus CameraSettings: 0x0526 PictureModeTone, 0x0527 NoiseFilter; 0x0502 depends on the value count.
             assertEquals(1, mn("WhiteBalanceBracket", "OlympusE1.jpg").size)
             assertTrue(mn("WhiteBalanceFineTune", "OlympusE1.jpg").isEmpty())
+            // Canon arrays, one observation per element with the element index as tag ID (EOS 20D, ExifTool 13.60).
+            val canon = x(Fixtures.ext("canon_eos20d.cr2")).full
+            assertEquals(2L, canon.find(listOf("MakerNotes", "CanonCameraSettings"), 1).single().value.asLong(), "MacroMode")
+            assertEquals("MacroMode", canon.find(listOf("MakerNotes", "CanonCameraSettings"), 1).single().tagName)
+            assertEquals(4L, canon.find("MakerNotes:CanonCameraSettings:Quality").single().value.asLong())
+            assertEquals(75L, canon.find("MakerNotes:CanonCameraSettings:MaxFocalLength").single().value.asLong())
+            assertTrue(canon.find("MakerNotes:CanonShotInfo:BaseISO").isNotEmpty())
             // Panasonic FirmwareVersion (0x0002) shares its ID with InteropVersion but is four binary bytes.
             assertEquals(listOf(0L, 1L, 0L, 8L), mn("FirmwareVersion", "Panasonic.jpg").single().value.asList().map { it.asLong() })
             assertEquals("0100", x(Fixtures.et("Panasonic.jpg")).full.find("EXIF:InteropIFD:InteropVersion").single().value.asText())

@@ -348,6 +348,9 @@ internal class TiffReader(
             PrintIm.parse(ctx, source, entry.dataOffset, entry.dataSize, bigEndian, "$path/PrintIM")
             return
         }
+        if (inMakerNote && !ctx.fast) {
+            ctx.facts["makernote.vendor"]?.let { MakerNoteArrays.decode(ctx, source, it, entry, bigEndian, path) }
+        }
         if (inMakerNote) {
             // MakerNote sub-IFDs: either type IFD, or vendor tags known to hold offsets.
             if (entry.type == TiffType.IFD || entry.type == TiffType.IFD8 || entry.tag in subIfdTags) {
