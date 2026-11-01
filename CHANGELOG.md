@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 (2026-11-01)
 
 ### Added
 - Canon **CR3**: detected by its `crx` brand and read as RAW. EXIF IFD0, Exif IFD, Canon MakerNote and GPS come from the
