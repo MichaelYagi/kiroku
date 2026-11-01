@@ -28,6 +28,13 @@ internal class MakerNoteParser(
         if (length < 8 || !source.contains(offset, length)) return
         val make = ctx.facts["make"].orEmpty()
         val head = source.readAtMost(offset, 32)
+        // Kodak "1a": a fixed big-endian record after "KDK INFO", not an IFD.
+        if (dev.kiroku.io.Bytes.startsWith(head, dev.kiroku.io.Bytes.ascii("KDK INFO")) && length > 16) {
+            ctx.collector.directory(path.split('/'), DirectoryKind.MAKERNOTE, source.absolute(offset), length, note = "MakerNote vendor Kodak (KDK INFO)")
+            ctx.facts["makernote.vendor"] = "Kodak"
+            MakerNoteArrays.kodak1a(ctx, source, offset, length, true, path)
+            return
+        }
         val candidates = candidates(head, offset, make, parentBigEndian, tiffBase)
         val chosen = candidates.firstOrNull {
             looksLikeIfd(

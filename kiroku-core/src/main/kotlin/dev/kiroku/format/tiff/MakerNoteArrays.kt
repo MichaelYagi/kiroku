@@ -96,6 +96,74 @@ internal object MakerNoteArrays {
             ("Canon" to 0x0093) to ("CanonFileInfo" to canonFileInfo),
         )
 
+    // ---- Fixed binary records (Kodak) ---------------------------------------------------------------------------
+
+    enum class Kind { U8, S8, U16, S16, U32, TEXT }
+
+    class Rec(val offset: Int, val name: String, val kind: Kind, val count: Int = 1)
+
+    // Kodak "1a" MakerNote (DC/DX/LS series): "KDK INFO", then this record. Offsets are relative to the end of the header.
+    private val kodak1a =
+        listOf(
+            Rec(0x00, "KodakModel", Kind.TEXT, 8), Rec(0x09, "Quality", Kind.U8), Rec(0x0A, "BurstMode", Kind.U8),
+            Rec(0x0C, "KodakImageWidth", Kind.U16), Rec(0x0E, "KodakImageHeight", Kind.U16), Rec(0x10, "YearCreated", Kind.U16),
+            Rec(0x12, "MonthDayCreated", Kind.U8, 2), Rec(0x14, "TimeCreated", Kind.U8, 4), Rec(0x18, "BurstMode2", Kind.U16),
+            Rec(0x1B, "ShutterMode", Kind.U8), Rec(0x1C, "MeteringMode", Kind.U8), Rec(0x1D, "SequenceNumber", Kind.U8),
+            Rec(0x1E, "FNumber", Kind.U16), Rec(0x20, "ExposureTime", Kind.U32), Rec(0x24, "ExposureCompensation", Kind.S16),
+            Rec(0x26, "VariousModes", Kind.U16), Rec(0x28, "Distance1", Kind.U32), Rec(0x2C, "Distance2", Kind.U32),
+            Rec(0x30, "Distance3", Kind.U32), Rec(0x34, "Distance4", Kind.U32), Rec(0x38, "FocusMode", Kind.U8),
+            Rec(0x3A, "VariousModes2", Kind.U16), Rec(0x3C, "PanoramaMode", Kind.U16), Rec(0x3E, "SubjectDistance", Kind.U16),
+            Rec(0x40, "WhiteBalance", Kind.U8), Rec(0x5C, "FlashMode", Kind.U8), Rec(0x5D, "FlashFired", Kind.U8),
+            Rec(0x5E, "ISOSetting", Kind.U16), Rec(0x60, "ISO", Kind.U16), Rec(0x62, "TotalZoom", Kind.U16),
+            Rec(0x64, "DateTimeStamp", Kind.U16), Rec(0x66, "ColorMode", Kind.U16), Rec(0x68, "DigitalZoom", Kind.U16),
+            Rec(0x6B, "Sharpness", Kind.S8),
+        )
+
+    /** Decodes a Kodak "KDK INFO" MakerNote at [start] (the header) of [length] bytes. */
+    fun kodak1a(ctx: NativeContext, s: ByteSource, start: Long, length: Long, bigEndian: Boolean, path: String) =
+        records(ctx, s, start + 8, length - 8, bigEndian, listOf("MakerNotes", "Kodak"), kodak1a, "$path/Kodak")
+
+    private fun records(ctx: NativeContext, s: ByteSource, base: Long, length: Long, be: Boolean, group: List<String>, recs: List<Rec>, path: String) {
+        for (r in recs) {
+            val unit = when (r.kind) {
+                Kind.U8, Kind.S8, Kind.TEXT -> 1
+                Kind.U16, Kind.S16 -> 2
+                Kind.U32 -> 4
+            }
+            val len = unit * r.count
+            if (r.offset + len > length) continue
+            val at = base + r.offset
+            val value =
+                if (r.kind == Kind.TEXT) {
+                    NormalizedValue.Text(String(s.read(at, len), Charsets.ISO_8859_1).substringBefore('\u0000').trimEnd())
+                } else {
+                    NormalizedValue.list(
+                        (0 until r.count).map { i ->
+                            val o = at + i * unit
+                            NormalizedValue.Integer(
+                                when (r.kind) {
+                                    Kind.U8 -> s.u8(o).toLong()
+                                    Kind.S8 -> s.u8(o).toByte().toLong()
+                                    Kind.U16 -> s.u16(o, be).toLong()
+                                    Kind.S16 -> s.u16(o, be).toShort().toLong()
+                                    else -> s.u32(o, be)
+                                },
+                            )
+                        },
+                    )
+                }
+            ctx.observe(
+                group,
+                r.name,
+                value,
+                tagId = r.offset.toLong(),
+                original = ctx.original(s, at, len.toLong(), TiffReader.orderOf(be)),
+                nativeType = NativeType(TypeSystem.TIFF, r.kind.name.lowercase(), null, r.count.toLong()),
+                sourcePath = path,
+            )
+        }
+    }
+
     // ---- Apple RunTime --------------------------------------------------------------------------------------------
 
     private val RUN_TIME_NAMES = mapOf("flags" to "RunTimeFlags", "value" to "RunTimeValue", "epoch" to "RunTimeEpoch", "timescale" to "RunTimeScale")

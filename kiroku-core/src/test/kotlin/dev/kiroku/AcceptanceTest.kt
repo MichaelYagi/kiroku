@@ -423,6 +423,11 @@ class AcceptanceTest {
             val leica = x(Fixtures.ext("leica_x2.dng")).full
             assertEquals("L1021324.DNG", leica.find("MakerNotes:Leica:OriginalFileName").single().value.asText())
             assertEquals("Natural *", leica.find("MakerNotes:Leica:FilmMode").single().value.asText())
+            // Kodak "KDK INFO" record (not an IFD); values from ExifTool 13.60.
+            val kodak = x(Fixtures.et("Kodak.jpg")).full
+            assertEquals("DX4900", kodak.find("MakerNotes:Kodak:KodakModel").single().value.asText())
+            assertEquals(2448L, kodak.find("MakerNotes:Kodak:KodakImageWidth").single().value.asLong())
+            assertEquals(108L, kodak.find("MakerNotes:Kodak:ISO").single().value.asLong())
             // Apple RunTime (a binary property list); values from ExifTool 13.60.
             val apple = x(Fixtures.et("Apple.jpg")).full
             assertEquals(39772089846958L, apple.find("MakerNotes:AppleRunTime:RunTimeValue").single().value.asLong())
