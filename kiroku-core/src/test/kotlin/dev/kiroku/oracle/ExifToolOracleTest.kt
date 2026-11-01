@@ -33,6 +33,11 @@ class ExifToolOracleTest {
     private fun compare(file: Path) {
         val et = Fixtures.exiftoolJson(file)
         val r = Fixtures.extractor.extract(file)
+        // A format Kiroku declines (for example a PostScript font) has nothing to compare; it must not claim data.
+        if (r.status == dev.kiroku.ExtractionStatus.UNSUPPORTED) {
+            if (r.full.observations.any { it.backend == "native" }) fail("${file.name}: UNSUPPORTED but has native observations")
+            return
+        }
         val problems = ArrayList<String>()
         compareExifTags(file, et, r, problems)
         compareGroups(file, et, r, problems)
@@ -118,6 +123,9 @@ class ExifToolOracleTest {
         val etNum = if (et.isNumber) et.asDouble() else et.asText().trim().toDoubleOrNull()
         val items = o.value.asList()
         val nums = items.map { it.asDouble() }
+        // ExifTool reports rationals with zero denominators (unset GPS values) as "" or "00:00:00".
+        val unset = items.isNotEmpty() && items.all { (it as? NormalizedValue.RationalValue)?.value?.denominator == 0L }
+        if (unset && et.asText().trim().let { it.isEmpty() || it == "00:00:00" }) return true
         return when (tag) {
             "ApertureValue", "MaxApertureValue" -> nums.singleOrNull()?.let {
                 etNum != null &&
@@ -276,6 +284,8 @@ class ExifToolOracleTest {
          */
         val KNOWN_DIVERGENCES: Map<String, String> =
             mapOf(
+                "value ExifIFD:UserComment" to
+                    "When a camera stores several NUL-separated strings (Ricoh), ExifTool keeps the first; Kiroku joins them",
                 "value MPEG:SampleRate" to
                     "With -n ExifTool reports the frame header's sample-rate index; Kiroku reports the rate in Hz",
                 "gallery.dimensions.stored" to

@@ -146,6 +146,11 @@ internal class MakerNoteParser(
 
             starts("QVC\u0000") -> out += Layout("Casio", mn + 6, tiffBase, parentBe)
 
+            // Ricoh ("RICOH\0\0\0" or "Ricoh" + 3 bytes) and Sanyo ("SANYO\0\x01\0"): an 8-byte header, then a TIFF-relative IFD.
+            starts("RICOH\u0000") || starts("Ricoh") -> out += Layout("Ricoh", mn + 8, tiffBase, parentBe)
+
+            starts("SANYO\u0000") -> out += Layout("Sanyo", mn + 8, tiffBase, parentBe)
+
             starts("SIGMA\u0000") || starts("FOVEON\u0000") -> out += Layout("Sigma", mn + 10, tiffBase, parentBe)
 
             starts("Ricoh") || starts("RICOH") -> out += Layout("Ricoh", mn + 8, tiffBase, parentBe)

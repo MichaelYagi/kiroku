@@ -946,6 +946,44 @@ internal object MakerNoteTags {
             0x005A to "Apple_0x005a",
         )
 
+    private val ricoh =
+        mapOf(
+            0x0001 to "MakerNoteType",
+            0x0002 to "FirmwareVersion",
+            0x0E00 to "PrintIM",
+        )
+
+    private val sanyo =
+        mapOf(
+            0x00FF to "MakerNoteOffset",
+            0x0100 to "SanyoThumbnail",
+            0x0200 to "SpecialMode",
+            0x0201 to "SanyoQuality",
+            0x0202 to "Macro",
+            0x0204 to "DigitalZoom",
+            0x0207 to "SoftwareVersion",
+            0x0208 to "PictInfo",
+            0x0209 to "CameraID",
+            0x020E to "SequentialShot",
+            0x020F to "WideRange",
+            0x0210 to "ColorAdjustmentMode",
+            0x0213 to "QuickShot",
+            0x0214 to "SelfTimer",
+            0x0216 to "VoiceMemo",
+            0x0217 to "RecordShutterRelease",
+            0x0218 to "FlickerReduce",
+            0x0219 to "OpticalZoomOn",
+            0x021B to "DigitalZoomOn",
+            0x021D to "LightSourceSpecial",
+            0x021E to "Resaved",
+            0x021F to "SceneSelect",
+            0x0223 to "ManualFocusDistance",
+            0x0224 to "SequenceShotInterval",
+            0x0225 to "FlashMode",
+            0x0E00 to "PrintIM",
+            0x0F00 to "DataDump",
+        )
+
     // Casio type 1 (header-less MakerNote, older QV and EX models).
     private val casioType1 =
         mapOf(
@@ -1082,6 +1120,8 @@ internal object MakerNoteTags {
         "Apple" -> apple
         "Casio" -> casio
         "CasioType1" -> casioType1
+        "Ricoh" -> ricoh
+        "Sanyo" -> sanyo
         "Sigma" -> sigma
         else -> emptyMap()
     }

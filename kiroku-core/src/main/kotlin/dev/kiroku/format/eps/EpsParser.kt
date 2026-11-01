@@ -33,7 +33,9 @@ internal object EpsParser {
 
     private val DOS_MAGIC = byteArrayOf(0xC5.toByte(), 0xD0.toByte(), 0xD3.toByte(), 0xC6.toByte())
 
-    fun looksLikePostScript(h: ByteArray): Boolean = Bytes.startsWith(h, Bytes.ascii("%!PS")) || Bytes.startsWith(h, DOS_MAGIC)
+    /** A PostScript document or DOS EPS. PostScript fonts (`%!PS-AdobeFont`, `%!FontType1`) are not documents. */
+    fun looksLikePostScript(h: ByteArray): Boolean =
+        Bytes.startsWith(h, DOS_MAGIC) || Bytes.startsWith(h, Bytes.ascii("%!PS")) && !Bytes.startsWith(h, Bytes.ascii("%!PS-AdobeFont"))
 
     // DSC keys and the names ExifTool gives them.
     private val NAMES =

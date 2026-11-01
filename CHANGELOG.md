@@ -37,6 +37,9 @@
 - Panasonic `FirmwareVersion` (0x0002) was decoded as text because it shares its ID with `InteropVersion`. Version
   tags are now matched by name, and non-printable version bytes are kept as numbers.
 - Casio `FirmwareDate` kept only its first NUL-separated part.
+- PostScript fonts (`%!PS-AdobeFont`) were detected as EPS images.
+- Ricoh and Sanyo MakerNotes are parsed (8-byte header + IFD), including the PrintIM blocks inside them.
+- All 76 ExifTool sample files Kiroku reads are now committed fixtures (108 in total), so both oracles check them.
 
 ## 0.1.1 (2026-10-31)
 
