@@ -96,6 +96,52 @@ internal object MakerNoteArrays {
             ("Canon" to 0x0093) to ("CanonFileInfo" to canonFileInfo),
         )
 
+    // ---- Apple RunTime --------------------------------------------------------------------------------------------
+
+    private val RUN_TIME_NAMES = mapOf("flags" to "RunTimeFlags", "value" to "RunTimeValue", "epoch" to "RunTimeEpoch", "timescale" to "RunTimeScale")
+
+    /**
+     * Apple 0x0003 is a binary property list (`bplist00`) holding a CMTime: flags, value, timescale and epoch (time
+     * since the device powered up is value / timescale). Only a flat dictionary of ASCII keys and integers is read.
+     */
+    private fun appleRunTime(ctx: NativeContext, s: ByteSource, entry: IfdEntry, path: String) {
+        val base = entry.dataOffset
+        val n = entry.dataSize
+        if (n < 40 || n > 4096 || s.ascii(base, 8) != "bplist00") return
+        val t = base + n - 32
+        val offsetSize = s.u8(t + 6)
+        val refSize = s.u8(t + 7)
+        val objects = s.u64(t + 8, true)
+        val top = s.u64(t + 16, true)
+        val table = s.u64(t + 24, true)
+        if (offsetSize !in 1..8 || refSize !in 1..8 || objects !in 1..256 || top >= objects || table + objects * offsetSize > n - 32) return
+        fun uint(at: Long, size: Int): Long = (0 until size).fold(0L) { acc, i -> (acc shl 8) or s.u8(at + i).toLong() }
+        fun objectAt(ref: Long): Long = base + uint(base + table + ref * offsetSize, offsetSize)
+        val dict = objectAt(top)
+        val marker = s.u8(dict)
+        if (marker shr 4 != 0xD || marker and 0x0F == 0x0F) return
+        val count = marker and 0x0F
+        for (i in 0 until count) {
+            val keyAt = objectAt(uint(dict + 1 + i.toLong() * refSize, refSize))
+            val valueAt = objectAt(uint(dict + 1 + (count + i).toLong() * refSize, refSize))
+            val km = s.u8(keyAt)
+            val vm = s.u8(valueAt)
+            if (km shr 4 != 0x5 || km and 0x0F == 0x0F || vm shr 4 != 0x1) continue
+            val key = s.ascii(keyAt + 1, km and 0x0F)
+            val size = 1 shl (vm and 0x0F)
+            if (size > 8 || valueAt + 1 + size > base + n) continue
+            ctx.observe(
+                listOf("MakerNotes", "AppleRunTime"),
+                RUN_TIME_NAMES[key] ?: "RunTime_$key",
+                NormalizedValue.Integer(uint(valueAt + 1, size)),
+                original = ctx.original(s, valueAt + 1, size.toLong(), dev.kiroku.model.ByteOrderMark.BIG_ENDIAN),
+                nativeType = NativeType(TypeSystem.TIFF, "bplist int${size * 8}"),
+                known = key in RUN_TIME_NAMES,
+                sourcePath = "$path/RunTime",
+            )
+        }
+    }
+
     // ---- Sony 0x9050 -------------------------------------------------------------------------------------------
 
     /** Sony's substitution cipher for 0x9050/0x94xx blocks: a byte b < 249 deciphers to b^55 mod 249. */
@@ -147,6 +193,7 @@ internal object MakerNoteArrays {
     fun decode(ctx: NativeContext, s: ByteSource, vendor: String, entry: IfdEntry, bigEndian: Boolean, path: String) {
         if (!entry.inBounds || entry.dataSize < 2) return
         if (vendor == "Sony" && entry.tag == 0x9050) return sony9050(ctx, s, entry, path)
+        if (vendor == "Apple" && entry.tag == 0x0003) return appleRunTime(ctx, s, entry, path)
         val (name, t) = tables[vendor to entry.tag] ?: return
         val group = listOf("MakerNotes", name)
         val order = TiffReader.orderOf(bigEndian)

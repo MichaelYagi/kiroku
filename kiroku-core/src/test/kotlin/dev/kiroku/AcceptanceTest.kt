@@ -423,6 +423,10 @@ class AcceptanceTest {
             val leica = x(Fixtures.ext("leica_x2.dng")).full
             assertEquals("L1021324.DNG", leica.find("MakerNotes:Leica:OriginalFileName").single().value.asText())
             assertEquals("Natural *", leica.find("MakerNotes:Leica:FilmMode").single().value.asText())
+            // Apple RunTime (a binary property list); values from ExifTool 13.60.
+            val apple = x(Fixtures.et("Apple.jpg")).full
+            assertEquals(39772089846958L, apple.find("MakerNotes:AppleRunTime:RunTimeValue").single().value.asLong())
+            assertEquals(1000000000L, apple.find("MakerNotes:AppleRunTime:RunTimeScale").single().value.asLong())
             // Panasonic FirmwareVersion (0x0002) shares its ID with InteropVersion but is four binary bytes.
             assertEquals(listOf(0L, 1L, 0L, 8L), mn("FirmwareVersion", "Panasonic.jpg").single().value.asList().map { it.asLong() })
             assertEquals("0100", x(Fixtures.et("Panasonic.jpg")).full.find("EXIF:InteropIFD:InteropVersion").single().value.asText())
