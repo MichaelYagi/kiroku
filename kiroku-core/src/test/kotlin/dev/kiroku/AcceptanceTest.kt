@@ -5,6 +5,7 @@ import dev.kiroku.model.CameraMetadata
 import dev.kiroku.model.DiagnosticCode
 import dev.kiroku.model.MediaFormat
 import dev.kiroku.model.MediaKind
+import dev.kiroku.model.NormalizedValue
 import dev.kiroku.model.Rational
 import dev.kiroku.model.StreamKind
 import dev.kiroku.model.asDouble
@@ -366,6 +367,16 @@ class AcceptanceTest {
             assertEquals(10, gif.animation!!.frameCount)
             assertEquals(0, gif.animation!!.loopCount, "NETSCAPE loop 0 = forever")
             assertEquals(java.time.Duration.ofSeconds(1), gif.animation!!.duration)
+            // Per-frame details, checked against metadata-extractor's GIF Image and GIF Control directories.
+            val obs = x(Fixtures.gen("gif_animated.gif")).full.observations
+            fun frame(n: Int, tag: String) = obs.single { it.groupPath == listOf("GIF", "Frame$n") && it.tagName == tag }.value
+            assertEquals(NormalizedValue.Integer(16), frame(2, "ImageHeight"))
+            assertEquals(NormalizedValue.Integer(2), frame(3, "ImageLeft"))
+            assertEquals(NormalizedValue.Integer(1), frame(1, "DisposalMethod"))
+            assertEquals(NormalizedValue.Bool(true), frame(2, "TransparentColorFlag"))
+            assertEquals(NormalizedValue.Integer(5), frame(2, "TransparentColorIndex"))
+            assertEquals(NormalizedValue.Integer(10), frame(10, "FrameDelay"))
+            assertEquals(NormalizedValue.Bool(false), frame(1, "Interlaced"))
             val webp = x(Fixtures.gen("webp_animated.webp")).gallery
             assertEquals(5, webp.animation!!.frameCount)
             assertEquals(3, webp.animation!!.loopCount)

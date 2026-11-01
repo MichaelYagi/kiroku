@@ -17,6 +17,10 @@ import dev.kiroku.model.TypeSystem
 internal object GifParser {
     private val GROUP = listOf("GIF", "GIF")
 
+    /** Per-frame details are reported for the first frames only; the frame count and total delay still cover all. */
+    private const val MAX_FRAME_DETAIL = 1000
+    private val DISPOSAL = listOf("Not specified", "Do not dispose", "Restore to background", "Restore to previous")
+
     fun parse(ctx: NativeContext, s: ByteSource) {
         if (s.size < 13) {
             ctx.warn(DiagnosticCode.TRUNCATED, "GIF shorter than its header")
@@ -40,6 +44,7 @@ internal object GifParser {
         o("HasColorMap", NormalizedValue.Bool(hasGct), 10, 1)
         o("ColorResolutionDepth", NormalizedValue.Integer((((flags shr 4) and 7) + 1).toLong()), 10, 1)
         o("BitsPerPixel", NormalizedValue.Integer(((flags and 7) + 1).toLong()), 10, 1)
+        o("ColorTableSorted", NormalizedValue.Bool(flags and 0x08 != 0), 10, 1)
         o("BackgroundColor", NormalizedValue.Integer(s.u8(11).toLong()), 11, 1)
         if (s.u8(12) != 0) o("PixelAspectRatio", NormalizedValue.Decimal((s.u8(12) + 15) / 64.0), 12, 1)
         ctx.collector.directory(listOf("GIF", "Header"), DirectoryKind.GIF_BLOCK, s.absolute(0), 13)
@@ -58,6 +63,26 @@ internal object GifParser {
                         frames++
                         if (pos + 10 > s.size) throw java.io.EOFException()
                         val f = s.u8(pos + 9)
+                        if (frames <= MAX_FRAME_DETAIL) {
+                            // Image descriptor: position and size within the logical screen, local colour table, interlacing.
+                            val fg = listOf("GIF", "Frame$frames")
+                            val fp = "GIF/Frame$frames"
+                            fun fo(name: String, v: NormalizedValue, off: Long, n: Long) = ctx.observe(
+                                fg,
+                                name,
+                                v,
+                                original = ctx.original(s, off, n),
+                                nativeType = NativeType(TypeSystem.GIF, "image descriptor", null, n),
+                                sourcePath = fp,
+                            )
+                            fo("ImageLeft", NormalizedValue.Integer(s.u16(pos + 1, false).toLong()), pos + 1, 2)
+                            fo("ImageTop", NormalizedValue.Integer(s.u16(pos + 3, false).toLong()), pos + 3, 2)
+                            fo("ImageWidth", NormalizedValue.Integer(s.u16(pos + 5, false).toLong()), pos + 5, 2)
+                            fo("ImageHeight", NormalizedValue.Integer(s.u16(pos + 7, false).toLong()), pos + 7, 2)
+                            fo("HasLocalColorTable", NormalizedValue.Bool(f and 0x80 != 0), pos + 9, 1)
+                            fo("Interlaced", NormalizedValue.Bool(f and 0x40 != 0), pos + 9, 1)
+                            if (f and 0x80 != 0) fo("LocalColorTableBits", NormalizedValue.Integer(((f and 7) + 1).toLong()), pos + 9, 1)
+                        }
                         pos += 10
                         if (f and 0x80 != 0) pos += 3L * (1 shl ((f and 7) + 1))
                         pos += 1 // LZW minimum code size
@@ -75,6 +100,28 @@ internal object GifParser {
                                     val d = s.u16(body + 2, false).toLong()
                                     delayCs += d
                                     anyDelay = true
+                                    // A graphic control extension applies to the next image descriptor.
+                                    if (frames < MAX_FRAME_DETAIL) {
+                                        val fg = listOf("GIF", "Frame${frames + 1}")
+                                        val fp = "GIF/Frame${frames + 1}"
+                                        val packed = s.u8(body + 1)
+                                        fun co(name: String, v: NormalizedValue, off: Long, n: Long, display: String? = null) = ctx.observe(
+                                            fg,
+                                            name,
+                                            v,
+                                            original = ctx.original(s, off, n),
+                                            displayValue = display,
+                                            nativeType = NativeType(TypeSystem.GIF, "graphic control", null, n),
+                                            sourcePath = fp,
+                                        )
+                                        val disposal = (packed shr 2) and 7
+                                        co("DisposalMethod", NormalizedValue.Integer(disposal.toLong()), body + 1, 1, DISPOSAL.getOrNull(disposal))
+                                        co("UserInputFlag", NormalizedValue.Bool(packed and 0x02 != 0), body + 1, 1)
+                                        co("TransparentColorFlag", NormalizedValue.Bool(packed and 0x01 != 0), body + 1, 1)
+                                        co("FrameDelay", NormalizedValue.Integer(d), body + 2, 2, "%.2f s".format(d / 100.0))
+                                        // Stored even when the transparency flag is off, as metadata-extractor reports it.
+                                        co("TransparentColorIndex", NormalizedValue.Integer(s.u8(body + 4).toLong()), body + 4, 1)
+                                    }
                                 }
                                 pos = skipSubBlocks(ctx, s, body)
                             }

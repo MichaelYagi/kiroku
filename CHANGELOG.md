@@ -30,6 +30,9 @@
 - MP3: VBRBytes and VBRScale from the Xing header.
 - The ExifTool oracle test now also compares the GeoTiff, PrintIM, Ducky, PostScript, ID3 and MPEG groups on every
   fixture, and Photoshop resources wherever both decode them.
+- GIF per-frame details in groups `GIF:Frame<n>` (first 1000 frames): position, size, local colour table, interlacing,
+  disposal method, user-input and transparency flags, transparent colour index and frame delay; plus the header's
+  ColorTableSorted flag.
 
 ### Fixed
 - XMP packets followed by NUL padding (Fujifilm) were rejected as malformed.
