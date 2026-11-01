@@ -3,6 +3,8 @@ package dev.kiroku.json
 import com.fasterxml.jackson.core.JsonEncoding
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.util.DefaultIndenter
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
 import dev.kiroku.Capabilities
 import dev.kiroku.MetadataResult
 import dev.kiroku.model.AnimationMetadata
@@ -79,15 +81,19 @@ public object KirokuJson {
     @JvmOverloads
     public fun write(result: MetadataResult, out: OutputStream, options: JsonOptions = JsonOptions()) {
         factory.createGenerator(out, JsonEncoding.UTF8).use { g ->
-            if (options.pretty) g.useDefaultPrettyPrinter()
+            if (options.pretty) g.prettyPrinter = prettyPrinter()
             writeResult(g, result, options)
         }
     }
 
+    // Jackson's default pretty printer ends lines with the platform separator (CRLF on Windows). Always use "\n" so the
+    // output is the same on every platform.
+    private fun prettyPrinter(): DefaultPrettyPrinter = DefaultPrettyPrinter().withObjectIndenter(DefaultIndenter("  ", "\n"))
+
     private fun render(options: JsonOptions, block: (JsonGenerator) -> Unit): String {
         val bos = ByteArrayOutputStream()
         factory.createGenerator(bos, JsonEncoding.UTF8).use { g ->
-            if (options.pretty) g.useDefaultPrettyPrinter()
+            if (options.pretty) g.prettyPrinter = prettyPrinter()
             block(g)
         }
         return bos.toString(Charsets.UTF_8)

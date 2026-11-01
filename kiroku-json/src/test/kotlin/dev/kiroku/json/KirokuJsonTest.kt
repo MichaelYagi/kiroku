@@ -54,6 +54,14 @@ class KirokuJsonTest {
     }
 
     @Test
+    fun `pretty JSON uses LF line endings on every platform`() {
+        val g = extractor.extract(fixtures.resolve("media/generated/jpeg_full_exif.jpg"), stable).gallery
+        val json = KirokuJson.galleryToJson(g, JsonOptions(pretty = true))
+        assertTrue(json.contains('\n'))
+        assertTrue(!json.contains('\r'), "no CR, whatever the platform line separator is")
+    }
+
+    @Test
     fun `full result JSON is valid, versioned and typed`() {
         val r = extractor.extract(fixtures.resolve("media/generated/jpeg_full_exif.jpg"), stable)
         val node = mapper.readTree(KirokuJson.toJson(r))

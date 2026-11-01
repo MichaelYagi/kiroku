@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- `kiroku-json`: pretty-printed JSON used the platform line separator, so it had CRLF line endings on Windows.
+  It now always uses `\n`, as the determinism guarantee requires.
+
 ## 0.1.0 (2026-10-31)
 
 First implementation.
