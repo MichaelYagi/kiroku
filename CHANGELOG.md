@@ -51,6 +51,8 @@
   (`QuickTime:ItemList:Lyrics`, ExifTool's names), and the four-character code is the tag ID.
 - QuickTime user-data text with a classic Mac language code was decoded as Latin-1 instead of MacRoman.
 - Ricoh and Sanyo MakerNotes are parsed (8-byte header + IFD), including the PrintIM blocks inside them.
+- Nikon PictureControlData (versions 01xx and 03xx): name, base, adjust, sharpness, clarity, contrast, brightness,
+  saturation, hue, filter and toning. CC0 Nikon D3000 and Z6III samples added to the fetch script.
 - Kodak "KDK INFO" MakerNotes (DC/DX/LS series): model, image size, date and time, exposure, distances, ISO, zoom.
 - Apple MakerNote RunTime (binary property list): RunTimeFlags, RunTimeValue, RunTimeScale, RunTimeEpoch.
 - DJI MakerNotes (aircraft speed and attitude, gimbal attitude) and Leica type 5 MakerNotes (X1/X2/X Vario: original

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Downloads full-size CC0 RAW samples from raw.pixls.us into fixtures/external (gitignored) and
 # verifies their SHA-256 checksums. Integration tests that need them skip when they are absent.
-# Total download is about 149 MB.
+# Total download is about 164 MB.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -25,6 +25,8 @@ FILES=(
   "4190|fujifilm_xs10.raf|9419d1408ebf850395e5dd563beb96309466546252caf541466034c9cb7e9724|Fujifilm - X-S10 - 14bit 14bit compressed (3:2).RAF"
   "882|leica_x2.dng|a67eca6271afb10510ffc9cf998b641d0e8a0ebfa4c779a7bc0bfed5d28b62dd|Leica - X2 - 12bit (3:2).DNG"
   "1052|dji_fc220.dng|85a4fc27cca3c1358abd22898d6426dc3448060ca5143e7bd255cb5fff64392d|DJI - FC220 - 16bit (4:3).DNG"
+  "2161|nikon_d3000.nef|a07ee8a0b1ff7a1ad06085306ef8f9a197d95fec639994467317c56108eeb435|Nikon - D3000 - 12bit 12bit compressed (Lossy (type 1)) (3:2).NEF"
+  "7810|nikon_z6iii.nef|a8fa2cacadcf9dc85475ebcf37fcc32614072bc155e39d01491cb9e293c1343d|Nikon - Z6_3 - 8bit compressed (3:2).NEF"
   # Mislabeled upload: a JPEG named .dng. Kept to test signature-first detection.
   "3839|mislabeled_jpeg_as.dng|6492b7e0ac8e012524c0c83606a104cc9bf3b68f30fa60c7b73ffbe4dc584ab1|Samsung - SM-G973U - 16bit 16bit (2.1132075471698).dng"
 )

@@ -423,6 +423,13 @@ class AcceptanceTest {
             val leica = x(Fixtures.ext("leica_x2.dng")).full
             assertEquals("L1021324.DNG", leica.find("MakerNotes:Leica:OriginalFileName").single().value.asText())
             assertEquals("Natural *", leica.find("MakerNotes:Leica:FilmMode").single().value.asText())
+            // Nikon PictureControlData, version 01xx (D3000) and 03xx (Z6III) layouts; values from ExifTool 13.60.
+            val d3000 = x(Fixtures.ext("nikon_d3000.nef")).full
+            assertEquals("STANDARD", d3000.find("MakerNotes:NikonPictureControl:PictureControlName").single().value.asText())
+            assertEquals(131L, d3000.find("MakerNotes:NikonPictureControl:Sharpness").single().value.asLong())
+            val z6 = x(Fixtures.ext("nikon_z6iii.nef")).full
+            assertEquals("AUTO", z6.find("MakerNotes:NikonPictureControl:PictureControlName").single().value.asText())
+            assertEquals(1L, z6.find("MakerNotes:NikonPictureControl:PictureControlAdjust").single().value.asLong())
             // Kodak "KDK INFO" record (not an IFD); values from ExifTool 13.60.
             val kodak = x(Fixtures.et("Kodak.jpg")).full
             assertEquals("DX4900", kodak.find("MakerNotes:Kodak:KodakModel").single().value.asText())

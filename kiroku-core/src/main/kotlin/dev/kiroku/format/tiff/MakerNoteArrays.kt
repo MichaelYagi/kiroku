@@ -119,6 +119,38 @@ internal object MakerNoteArrays {
             Rec(0x6B, "Sharpness", Kind.S8),
         )
 
+    // Nikon PictureControlData (0x0023). The layout follows the version string; versions without a verified sample
+    // (02xx) are not decoded.
+    private val nikonPictureControl1 =
+        listOf(
+            Rec(0x00, "PictureControlVersion", Kind.TEXT, 4), Rec(0x04, "PictureControlName", Kind.TEXT, 20),
+            Rec(0x18, "PictureControlBase", Kind.TEXT, 20), Rec(0x30, "PictureControlAdjust", Kind.U8),
+            Rec(0x31, "PictureControlQuickAdjust", Kind.U8), Rec(0x32, "Sharpness", Kind.U8), Rec(0x33, "Contrast", Kind.U8),
+            Rec(0x34, "Brightness", Kind.U8), Rec(0x35, "Saturation", Kind.U8), Rec(0x36, "HueAdjustment", Kind.U8),
+            Rec(0x37, "FilterEffect", Kind.U8), Rec(0x38, "ToningEffect", Kind.U8), Rec(0x39, "ToningSaturation", Kind.U8),
+        )
+
+    private val nikonPictureControl3 =
+        listOf(
+            Rec(0x00, "PictureControlVersion", Kind.TEXT, 4), Rec(0x08, "PictureControlName", Kind.TEXT, 20),
+            Rec(0x1C, "PictureControlBase", Kind.TEXT, 20), Rec(0x36, "PictureControlAdjust", Kind.U8),
+            Rec(0x37, "PictureControlQuickAdjust", Kind.U8), Rec(0x39, "Sharpness", Kind.U8), Rec(0x3B, "MidRangeSharpness", Kind.U8),
+            Rec(0x3D, "Clarity", Kind.U8), Rec(0x3F, "Contrast", Kind.U8), Rec(0x41, "Brightness", Kind.U8), Rec(0x43, "Saturation", Kind.U8),
+            Rec(0x45, "Hue", Kind.U8), Rec(0x47, "FilterEffect", Kind.U8), Rec(0x48, "ToningEffect", Kind.U8),
+            Rec(0x49, "ToningSaturation", Kind.U8),
+        )
+
+    private fun nikonPictureControl(ctx: NativeContext, s: ByteSource, entry: IfdEntry, path: String) {
+        if (entry.dataSize < 0x3A) return
+        val recs =
+            when (s.ascii(entry.dataOffset, 2)) {
+                "01" -> nikonPictureControl1
+                "03" -> nikonPictureControl3
+                else -> return
+            }
+        records(ctx, s, entry.dataOffset, entry.dataSize, true, listOf("MakerNotes", "NikonPictureControl"), recs, "$path/PictureControlData")
+    }
+
     /** Decodes a Kodak "KDK INFO" MakerNote at [start] (the header) of [length] bytes. */
     fun kodak1a(ctx: NativeContext, s: ByteSource, start: Long, length: Long, bigEndian: Boolean, path: String) =
         records(ctx, s, start + 8, length - 8, bigEndian, listOf("MakerNotes", "Kodak"), kodak1a, "$path/Kodak")
@@ -262,6 +294,7 @@ internal object MakerNoteArrays {
         if (!entry.inBounds || entry.dataSize < 2) return
         if (vendor == "Sony" && entry.tag == 0x9050) return sony9050(ctx, s, entry, path)
         if (vendor == "Apple" && entry.tag == 0x0003) return appleRunTime(ctx, s, entry, path)
+        if (vendor == "Nikon" && entry.tag == 0x0023) return nikonPictureControl(ctx, s, entry, path)
         val (name, t) = tables[vendor to entry.tag] ?: return
         val group = listOf("MakerNotes", name)
         val order = TiffReader.orderOf(bigEndian)
