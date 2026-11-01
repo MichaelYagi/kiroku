@@ -198,6 +198,13 @@ class AcceptanceTest {
                     qt.find("QuickTime:ItemList:BeatsPerMinute").single().value.asLong().toString()
                 },
             )
+            // Header fields ExifTool and metadata-extractor report (values from ExifTool 13.60).
+            assertEquals("pent", qt.find("QuickTime:Track1:VendorID").single().value.asText())
+            assertEquals(64L, qt.find("QuickTime:Track1:GraphicsMode").single().value.asLong())
+            assertEquals(listOf(320.0, 240.0), qt.find("QuickTime:Track1:CleanApertureDimensions").single().value.asList().map { it.asDouble() })
+            assertEquals(30.0, qt.find("QuickTime:Track1:VideoFrameRate").single().value.asDouble())
+            assertEquals(3871L, qt.find("QuickTime:QuickTime:MediaDataOffset").single().value.asLong())
+            assertEquals(0L, qt.find("QuickTime:MovieHeader:PosterTime").single().value.asLong())
             // User-data text with a Mac language code is MacRoman, not Latin-1.
             assertEquals("ålbum", qt.find("QuickTime:UserData:Album").single().value.asText())
         }

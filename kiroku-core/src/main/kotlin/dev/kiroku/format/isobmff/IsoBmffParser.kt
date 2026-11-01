@@ -193,7 +193,49 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
 
             "XMP_" -> XmpParser.parse(ctx, s, p, len, "$path/XMP")
 
-            "free", "skip", "wide", "mdat", "moof", "mfra", "sidx", "styp", "emsg", "prft", "pdin" -> Unit
+            "mdat" -> {
+                val top = listOf("QuickTime", "QuickTime")
+                obs(top, "MediaDataSize", NormalizedValue.Integer(end - p), boxStart, p - boxStart, path, "box size")
+                obs(
+                    listOf("QuickTime", "QuickTime"),
+                    "MediaDataOffset",
+                    NormalizedValue.Integer(s.absolute(p) ?: p),
+                    boxStart,
+                    p - boxStart,
+                    path,
+                    "box offset",
+                )
+            }
+
+            // Video and sound media headers.
+            "vmhd" -> if (len >= 12) {
+                obs(group(), "GraphicsMode", NormalizedValue.Integer(s.u16(p + 4, true).toLong()), p + 4, 2, path)
+                obs(group(), "OpColor", NormalizedValue.list((0..2).map { NormalizedValue.Integer(s.u16(p + 6 + it * 2L, true).toLong()) }), p + 6, 6, path)
+            }
+
+            "smhd" -> if (len >= 6) obs(group(), "Balance", NormalizedValue.Decimal(s.u16(p + 4, true).toShort() / 256.0), p + 4, 2, path, "fixed8.8")
+
+            // Track aperture modes: clean, production and encoded-pixels dimensions (fixed 16.16 width and height).
+            "tapt" -> {
+                var c = p
+                while (c + 20 <= end) {
+                    val csize = s.u32(c, true)
+                    if (csize < 20 || c + csize > end) break
+                    val n = when (s.ascii(c + 4, 4)) {
+                        "clef" -> "CleanApertureDimensions"
+                        "prof" -> "ProductionApertureDimensions"
+                        "enof" -> "EncodedPixelsDimensions"
+                        else -> null
+                    }
+                    if (n != null) {
+                        val dims = listOf(s.u32(c + 12, true) / 65536.0, s.u32(c + 16, true) / 65536.0).map { NormalizedValue.Decimal(it) }
+                        obs(group(), n, NormalizedValue.list(dims), c + 12, 8, "$path/${s.ascii(c + 4, 4)}", "fixed16.16[2]")
+                    }
+                    c += csize
+                }
+            }
+
+            "free", "skip", "wide", "moof", "mfra", "sidx", "styp", "emsg", "prft", "pdin" -> Unit
 
             else ->
                 when {
@@ -287,6 +329,11 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
         obs(g, "PreferredRate", NormalizedValue.Decimal(s.u32(o, true).toInt() / 65536.0), o, 4, path, "fixed16.16")
         obs(g, "PreferredVolume", NormalizedValue.Decimal(s.u16(o + 4, true).toShort() / 256.0), o + 4, 2, path, "fixed8.8")
         obs(g, "MatrixStructure", matrix(o + 16), o + 16, 36, path, "matrix")
+        // QuickTime preview, poster and selection times, in movie timescale units.
+        for ((i, n) in listOf("PreviewTime", "PreviewDuration", "PosterTime", "SelectionTime", "SelectionDuration", "CurrentTime").withIndex()) {
+            val at = o + 52 + i * 4
+            obs(g, n, NormalizedValue.Integer(s.u32(at, true)), at, 4, path, display = seconds(s.u32(at, true), movieTimescale), unit = "timescale units")
+        }
         obs(g, "NextTrackID", NormalizedValue.Integer(s.u32(o + 76, true)), o + 76, 4, path)
     }
 
@@ -336,6 +383,7 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
         val t = current ?: return
         val g = group()
         val v = s.u8(p)
+        obs(g, "MediaHeaderVersion", NormalizedValue.Integer(v.toLong()), p, 1, path)
         val w = if (v == 1) 8L else 4L
         if (len < 4 + 2 * w + 4 + w + 4) return
         var o = p + 4
@@ -370,6 +418,16 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
         // QuickTime stores a Pascal string. ISO stores a NUL-terminated one.
         if (name.isNotEmpty() && name[0].code == name.length - 1) name = name.substring(1)
         val g = if (parent == "meta") listOf("QuickTime", "Meta") else group()
+        // QuickTime fills the component type ("mhlr"/"dhlr") and manufacturer; ISO files leave them zero.
+        val handlerClass = s.read(p + 4, 4)
+        if (handlerClass.any {
+                it != 0.toByte()
+            }
+        ) {
+            obs(g, "HandlerClass", NormalizedValue.Text(String(handlerClass, Charsets.ISO_8859_1)), p + 4, 4, path, "fourcc")
+        }
+        val vendor = s.read(p + 12, 4)
+        if (vendor.any { it != 0.toByte() }) obs(g, "HandlerVendorID", NormalizedValue.Text(String(vendor, Charsets.ISO_8859_1)), p + 12, 4, path, "fourcc")
         obs(g, "HandlerType", NormalizedValue.Text(type), p + 8, 4, path, "fourcc", display = handlerName(type))
         if (name.isNotBlank()) obs(g, "HandlerDescription", NormalizedValue.Text(name), p + 24, nameLen.toLong(), path, "string")
         val t = current
@@ -428,6 +486,8 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
                 t.props["compressorName"] = NormalizedValue.Text(compName)
             }
             obs(g, "BitDepth", NormalizedValue.Integer(bitDepth.toLong()), p + 74, 2, path)
+            val vendor = s.read(p + 12, 4)
+            if (vendor.any { it != 0.toByte() }) obs(g, "VendorID", NormalizedValue.Text(String(vendor, Charsets.ISO_8859_1)), p + 12, 4, path, "fourcc")
         }
         // Child boxes follow the 78-byte visual sample entry.
         var pos = p + 78
@@ -664,6 +724,7 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
             childStart = p + 64
         }
         if (primary) {
+            obs(g, "AudioFormat", NormalizedValue.Text(t.codecTag.orEmpty()), p - 4, 4, path, "fourcc")
             t.codec = audioCodec(t.codecTag.orEmpty())
             t.props["channels"] = NormalizedValue.Integer(channels)
             if (bits > 0) t.props["bitsPerSample"] = NormalizedValue.Integer(bits)
@@ -824,6 +885,15 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
             if (count != null) t.props["sampleCount"] = NormalizedValue.Integer(count)
             if (count != null && t.durationUnits > 0 && t.timescale > 0 && kind == StreamKind.VIDEO) {
                 t.props["averageFrameRate"] = NormalizedValue.RationalValue(Rational(count * t.timescale, t.durationUnits).reduced())
+                // ExifTool's VideoFrameRate: computed from the sample table, so it has no original bytes.
+                ctx.observe(
+                    listOf("QuickTime", "Track${t.number}"),
+                    "VideoFrameRate",
+                    NormalizedValue.Decimal(count.toDouble() * t.timescale / t.durationUnits),
+                    nativeType = NativeType(TypeSystem.ISOBMFF, "computed"),
+                    streamIndex = t.number - 1,
+                    sourcePath = "QuickTime/Track${t.number}",
+                )
             }
             val bytes = t.totalSampleBytes
             if (bytes != null && t.durationUnits > 0 && t.timescale > 0 && !t.props.containsKey("bitRate")) {

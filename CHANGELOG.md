@@ -51,6 +51,9 @@
   (`QuickTime:ItemList:Lyrics`, ExifTool's names), and the four-character code is the tag ID.
 - QuickTime user-data text with a classic Mac language code was decoded as Latin-1 instead of MacRoman.
 - Ricoh and Sanyo MakerNotes are parsed (8-byte header + IFD), including the PrintIM blocks inside them.
+- QuickTime/MP4: movie-header preview, poster, selection and current times; MediaDataSize/Offset; handler class and
+  vendor; media-header version; video GraphicsMode/OpColor and sound Balance; sample-entry VendorID and AudioFormat;
+  clean, production and encoded-pixels aperture dimensions (`tapt`); VideoFrameRate. All checked against ExifTool.
 - Nikon PictureControlData (versions 01xx and 03xx): name, base, adjust, sharpness, clarity, contrast, brightness,
   saturation, hue, filter and toning. CC0 Nikon D3000 and Z6III samples added to the fetch script.
 - Kodak "KDK INFO" MakerNotes (DC/DX/LS series): model, image size, date and time, exposure, distances, ISO, zoom.
