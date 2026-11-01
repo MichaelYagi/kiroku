@@ -16,6 +16,14 @@
   applies to the Photoshop block in JPEG and TIFF files.
 - XMP: `XMPToolkit` (including the pre-XMP-3 `x:xaptk` form) and `rdf:about` are reported.
 - `DiagnosticCode.ESTIMATED_VALUE` for values that are estimated rather than read.
+- **GeoTIFF** keys (group `GeoTiff`): version, model and raster type, geographic/projected CS, datum, ellipsoid,
+  projection parameters, from the key directory and its double and ASCII parameter tags. The GeoTIFF TIFF tags
+  (PixelScale, ModelTiePoint, ModelTransform) are now named.
+- **PrintIM** (Epson PRINT Image Matching) blocks in TIFF tag 0xC4A5, MakerNotes and JPEG APP6 `EPPIM` segments.
+- **Ducky** (Photoshop "Save for Web") APP12 segments: quality, comment, copyright.
+- MP3: VBRBytes and VBRScale from the Xing header.
+- The ExifTool oracle test now also compares the GeoTiff, PrintIM, Ducky, PostScript, ID3 and MPEG groups on every
+  fixture, and Photoshop resources wherever both decode them.
 
 ### Fixed
 - XMP packets followed by NUL padding (Fujifilm) were rejected as malformed.

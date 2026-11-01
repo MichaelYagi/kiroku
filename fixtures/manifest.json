@@ -681,6 +681,22 @@
       "knownLimitations": null
     },
     {
+      "path": "media/exiftool/GeoTiff.tif",
+      "committed": true,
+      "sizeBytes": 2660,
+      "sha256": "21a96e69afa8d01c6b79fa34a9c4697540854b0bed20efdf5b207b2a6bf4e1e3",
+      "source": "ExifTool 13.60 distribution, t/images (https://exiftool.org)",
+      "license": "Same terms as Perl (Artistic-1.0-Perl OR GPL-1.0-or-later); test images by Phil Harvey and contributors",
+      "expected": {
+        "exiftool-13.60": {
+          "File:FileType": "TIFF",
+          "File:MIMEType": "image/tiff",
+          "Composite:ImageSize": "25 24"
+        }
+      },
+      "knownLimitations": null
+    },
+    {
       "path": "media/exiftool/GoPro.jpg",
       "committed": true,
       "sizeBytes": 4601,

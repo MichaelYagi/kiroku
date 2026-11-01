@@ -266,8 +266,9 @@ internal object PhotoshopParser {
             }
 
             0x0406 -> if (size >= 6) {
-                // ExifTool reports the stored quality plus 4 (Photoshop's 0-12 scale).
-                o("PhotoshopQuality", NormalizedValue.Integer(s.u16(d, true).toShort() + 4L), 0, 2, "int16s")
+                // The stored value runs from -4; Photoshop's 0-12 quality scale is the stored value plus 4.
+                val q = s.u16(d, true).toShort().toLong()
+                o("PhotoshopQuality", NormalizedValue.Integer(q), 0, 2, "int16s", (q + 4).toString())
                 int("PhotoshopFormat", 2, 2) {
                     if (it == 0L) {
                         "Standard"
@@ -289,6 +290,8 @@ internal object PhotoshopParser {
             0x040C -> thumbnail(ctx, s, d, size, g, path)
 
             0x040D -> int("GlobalAngle", 0, 4)
+
+            0x0414 -> int("IDsBaseValue", 0, 4)
 
             0x0419 -> int("GlobalAltitude", 0, 4)
 
@@ -329,7 +332,7 @@ internal object PhotoshopParser {
         }
     }
 
-    private val SINGLE_VALUE = setOf(0x040A, 0x040B, 0x040D, 0x0419)
+    private val SINGLE_VALUE = setOf(0x040A, 0x040B, 0x040D, 0x0414, 0x0419)
 
     private fun unitName(v: Long): String? = when (v) {
         1L -> "inches"

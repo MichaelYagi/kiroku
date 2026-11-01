@@ -37,6 +37,49 @@ internal object JpegParser {
     fun parse(ctx: NativeContext, source: ByteSource) = parseInternal(ctx, source, "JPEG", null)
 
     /** An embedded JPEG (for example Panasonic `JpgFromRaw`). Its frame header goes to `["JPEG", label]`, not `File`. */
+    private fun ducky(ctx: NativeContext, s: ByteSource, start: Long, length: Long, path: String) {
+        val g = listOf("Ducky", "Ducky")
+        ctx.collector.directory(g, dev.kiroku.model.DirectoryKind.FILE, s.absolute(start), length, dev.kiroku.model.ByteOrderMark.BIG_ENDIAN)
+        var pos = start
+        val end = start + length
+        while (pos + 4 <= end) {
+            val tag = s.u16(pos, true)
+            if (tag == 0) break
+            val len = s.u16(pos + 2, true).toLong()
+            val d = pos + 4
+            if (d + len > end) {
+                ctx.warn(DiagnosticCode.TRUNCATED, "Ducky record $tag runs past its segment", severity = dev.kiroku.model.Severity.INFO)
+                break
+            }
+            val name = when (tag) {
+                1 -> "Quality"
+                2 -> "Comment"
+                3 -> "Copyright"
+                else -> "Ducky_0x%04X".format(tag)
+            }
+            val value =
+                when {
+                    tag == 1 && len == 4L -> NormalizedValue.Integer(s.u32(d, true))
+
+                    // Text records: a character count, then UTF-16BE.
+                    (tag == 2 || tag == 3) && len >= 4 -> NormalizedValue.Text(String(s.read(d + 4, (len - 4).toInt()), Charsets.UTF_16BE).trimEnd('\u0000'))
+
+                    else -> NormalizedValue.Binary(len)
+                }
+            ctx.observe(
+                g,
+                name,
+                value,
+                tagId = tag.toLong(),
+                original = ctx.original(s, d, len, dev.kiroku.model.ByteOrderMark.BIG_ENDIAN),
+                nativeType = NativeType(TypeSystem.JPEG, "Ducky", tag, len),
+                known = tag in 1..3,
+                sourcePath = "$path/Ducky",
+            )
+            pos = d + len
+        }
+    }
+
     fun parseEmbedded(ctx: NativeContext, source: ByteSource, prefix: String, label: String) = parseInternal(ctx, source, prefix, label)
 
     private fun parseInternal(ctx: NativeContext, source: ByteSource, prefix: String, embeddedLabel: String?) {
@@ -167,6 +210,19 @@ internal object JpegParser {
                         segPath,
                     )
                 }
+
+                // Epson PRINT Image Matching: "EPPIM\0" and a TIFF block whose IFD holds the PrintIM tag.
+                marker == 0xE6 && Bytes.startsWith(head, Bytes.ascii("EPPIM\u0000")) && dataLen > 14 -> {
+                    ctx.observe(
+                        listOf("JPEG", segName), segName, NormalizedValue.Binary(dataLen), tagId = (0xFF00 or marker).toLong(),
+                        original = ctx.original(source, dataStart, dataLen), nativeType = NativeType(TypeSystem.JPEG, segName, null, dataLen),
+                        displayValue = "EPPIM", known = false, sourcePath = segPath,
+                    )
+                    TiffReader(ctx, source.slice(dataStart + 6, dataLen - 6), "$segPath/TIFF", family0 = "EPPIM").parse()
+                }
+
+                // Photoshop "Save for Web": "Ducky", then (tag, length, data) records until a zero tag.
+                marker == 0xEC && Bytes.startsWith(head, Bytes.ascii("Ducky")) -> ducky(ctx, source, dataStart + 5, dataLen - 5, segPath)
 
                 marker == 0xEE && Bytes.startsWith(head, Bytes.ascii("Adobe")) && dataLen >= 12 -> {
                     val g = listOf("APP14", "Adobe")

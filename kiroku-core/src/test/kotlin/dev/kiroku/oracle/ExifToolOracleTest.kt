@@ -35,6 +35,7 @@ class ExifToolOracleTest {
         val r = Fixtures.extractor.extract(file)
         val problems = ArrayList<String>()
         compareExifTags(file, et, r, problems)
+        compareGroups(file, et, r, problems)
         compareGallery(file, et, r, problems)
         val unexpected = problems.filterNot { p -> KNOWN_DIVERGENCES.any { (k, _) -> p.startsWith("${file.name}: $k") } }
         if (unexpected.isNotEmpty()) fail(unexpected.joinToString("\n"))
@@ -57,6 +58,29 @@ class ExifToolOracleTest {
             if (obs.none { valuesAgree(it, value) || exifToolConverted(tag, it, value) }) {
                 problems +=
                     "${file.name}: value $group:$tag kiroku=${obs.first().value.toString().take(60)} exiftool=${value.toString().take(60)}"
+            }
+        }
+    }
+
+    /**
+     * Non-EXIF groups, keyed by ExifTool's family-1 name. In [COMPLETE_GROUPS] every ExifTool tag must exist natively
+     * with an equal value; in [AGREE_GROUPS] (where Kiroku decodes a documented subset) tags present in both must agree.
+     */
+    private fun compareGroups(file: Path, et: JsonNode, r: MetadataResult, problems: MutableList<String>) {
+        val native = r.full.observations.filter { it.backend == "native" && it.groupPath.size >= 2 }
+        val byKey = native.groupBy { "${it.groupPath[1]}:${it.tagName}" }
+        for ((key, value) in et.properties()) {
+            val group = key.substringBefore(':')
+            val tag = key.substringAfter(':')
+            val complete = group in COMPLETE_GROUPS || COMPLETE_GROUP_PREFIXES.any { group.startsWith(it) }
+            if (!complete && group !in AGREE_GROUPS) continue
+            val obs = byKey["$group:$tag"]
+            if (obs.isNullOrEmpty()) {
+                if (complete) problems += "${file.name}: missing $group:$tag (ExifTool=${value.toString().take(60)})"
+                continue
+            }
+            if (obs.none { valuesAgree(it, value) }) {
+                problems += "${file.name}: value $group:$tag kiroku=${obs.first().value.toString().take(60)} exiftool=${value.toString().take(60)}"
             }
         }
     }
@@ -228,6 +252,10 @@ class ExifToolOracleTest {
     }
 
     companion object {
+        val COMPLETE_GROUPS = setOf("GeoTiff", "PrintIM", "Ducky", "PostScript", "MPEG")
+        val COMPLETE_GROUP_PREFIXES = listOf("ID3v")
+        val AGREE_GROUPS = setOf("Photoshop")
+
         /** ExifTool tags that are computed rather than stored, or named differently on purpose. */
         val EXIFTOOL_DERIVED = setOf("ThumbnailImage", "PreviewImage", "JpgFromRaw", "OtherImage", "ThumbnailTIFF")
 
@@ -248,6 +276,8 @@ class ExifToolOracleTest {
          */
         val KNOWN_DIVERGENCES: Map<String, String> =
             mapOf(
+                "value MPEG:SampleRate" to
+                    "With -n ExifTool reports the frame header's sample-rate index; Kiroku reports the rate in Hz",
                 "gallery.dimensions.stored" to
                     "ExifTool's Composite:ImageSize mixes sources per vendor; Kiroku documents its own RAW policy (DNG DefaultCropSize, then the largest full-resolution raw IFD, then EXIF size) — see docs/NORMALIZATION.md",
             )

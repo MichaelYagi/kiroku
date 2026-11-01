@@ -423,7 +423,8 @@ internal object Mp3Parser {
         bits("AudioBitrate", f.bitrate.toLong(), if (f.bitrate > 0) "${f.bitrate / 1000} kbps" else "free format")
         bits("SampleRate", f.sampleRate.toLong())
         bits("ChannelMode", f.channelMode.toLong(), arrayOf("Stereo", "Joint Stereo", "Dual Channel", "Single Channel")[f.channelMode])
-        if (f.channelMode == 1 && f.layerBits == 1) {
+        // Layer III mode-extension bits (meaningful for joint stereo; ExifTool reports them for every Layer III frame).
+        if (f.layerBits == 1) {
             bits("MSStereo", (h ushr 5) and 1, if ((h ushr 5) and 1L == 1L) "On" else "Off")
             bits("IntensityStereo", (h ushr 4) and 1, if ((h ushr 4) and 1L == 1L) "On" else "Off")
         }
@@ -439,7 +440,35 @@ internal object Mp3Parser {
         val xingAt = at + 4 + side
         if (s.contains(xingAt, 12) && s.ascii(xingAt, 4).let { it == "Xing" || it == "Info" }) {
             vbrTag = s.ascii(xingAt, 4)
-            if (s.u32(xingAt + 4, true) and 1L != 0L) frames = s.u32(xingAt + 8, true)
+            // Optional fields in flag order: frames (bit 0), bytes (bit 1), 100-byte TOC (bit 2), quality (bit 3).
+            val flags = s.u32(xingAt + 4, true)
+            var at2 = xingAt + 8
+            if (flags and 1L != 0L && s.contains(at2, 4)) {
+                frames = s.u32(at2, true)
+                at2 += 4
+            }
+            if (flags and 2L != 0L && s.contains(at2, 4)) {
+                ctx.observe(
+                    MPEG,
+                    "VBRBytes",
+                    NormalizedValue.Integer(s.u32(at2, true)),
+                    original = ctx.original(s, at2, 4),
+                    nativeType = NativeType(TypeSystem.MPEG, "int32u"),
+                    sourcePath = "MPEG/VBR",
+                )
+                at2 += 4
+            }
+            if (flags and 4L != 0L) at2 += 100
+            if (flags and 8L != 0L && s.contains(at2, 4)) {
+                ctx.observe(
+                    MPEG,
+                    "VBRScale",
+                    NormalizedValue.Integer(s.u32(at2, true)),
+                    original = ctx.original(s, at2, 4),
+                    nativeType = NativeType(TypeSystem.MPEG, "int32u"),
+                    sourcePath = "MPEG/VBR",
+                )
+            }
         } else if (s.contains(at + 36, 18) && s.ascii(at + 36, 4) == "VBRI") {
             vbrTag = "VBRI"
             frames = s.u32(at + 36 + 14, true)

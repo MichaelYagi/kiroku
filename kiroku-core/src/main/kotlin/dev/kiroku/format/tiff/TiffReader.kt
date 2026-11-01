@@ -151,6 +151,8 @@ internal class TiffReader(
 
     private fun pathOf(vararg tail: String): List<String> = sourcePrefix.split('/') + tail
 
+    private val PRINT_IM_TAG = 0xC4A5
+
     private object FujiTags {
         const val FUJI_IFD = 0xF000
 
@@ -302,6 +304,7 @@ internal class TiffReader(
         }
 
         if (makerNoteTags == null) recordImage(group, entries, groupFamily0)
+        if (makerNoteTags == null && !ctx.fast) GeoTiff.decode(ctx, source, entries, bigEndian, path)
         if (group == "IFD0" && groupFamily0 == family0) {
             entries.firstOrNull { it.tag == TiffTags.MAKE }?.value?.let { make = (it as? NormalizedValue.Text)?.value?.trim() }
             entries.firstOrNull { it.tag == TiffTags.MODEL }?.value?.let { model = (it as? NormalizedValue.Text)?.value?.trim() }
@@ -341,6 +344,10 @@ internal class TiffReader(
         subIfdTags: Set<Int>,
     ) {
         val inMakerNote = makerNoteTags != null
+        if (entry.tag == PRINT_IM_TAG && !inMakerNote || inMakerNote && makerNoteTags[entry.tag] == "PrintIM") {
+            PrintIm.parse(ctx, source, entry.dataOffset, entry.dataSize, bigEndian, "$path/PrintIM")
+            return
+        }
         if (inMakerNote) {
             // MakerNote sub-IFDs: either type IFD, or vendor tags known to hold offsets.
             if (entry.type == TiffType.IFD || entry.type == TiffType.IFD8 || entry.tag in subIfdTags) {

@@ -7,6 +7,7 @@ import dev.kiroku.model.MediaFormat
 import dev.kiroku.model.MediaKind
 import dev.kiroku.model.Rational
 import dev.kiroku.model.StreamKind
+import dev.kiroku.model.asDouble
 import dev.kiroku.model.asLong
 import dev.kiroku.model.asText
 import dev.kiroku.testing.Fixtures
@@ -165,6 +166,24 @@ class AcceptanceTest {
             assertEquals(MediaFormat.PCX.id, pcx.gallery.format)
             assertEquals(8 to 8, pcx.gallery.dimensions!!.storedWidth to pcx.gallery.dimensions!!.storedHeight)
             assertEquals(3L, pcx.full.find("File:File:ColorPlanes").single().value.asLong())
+        }
+
+        @Test
+        fun `GeoTIFF keys, PrintIM and Ducky blocks are decoded`() {
+            // Expected values from ExifTool 13.60.
+            val geo = x(Fixtures.et("GeoTiff.tif")).full
+            assertEquals("1.1.0", geo.find("GeoTiff:GeoTiff:GeoTiffVersion").single().value.asText())
+            assertEquals(1L, geo.find("GeoTiff:GeoTiff:GTModelType").single().value.asLong())
+            assertEquals("Hough UTM zone 17N", geo.find("GeoTiff:GeoTiff:PCSCitation").single().value.asText(), "ASCII params, '|' removed")
+            assertEquals(6378270.0, geo.find("GeoTiff:GeoTiff:GeogSemiMajorAxis").single().value.asDouble(), "double params")
+            assertEquals(16017L, geo.find("GeoTiff:GeoTiff:Projection").single().value.asLong())
+
+            val jpg = x(Fixtures.et("ExifTool.jpg")).full
+            assertEquals("0250", jpg.find("PrintIM:PrintIM:PrintIMVersion").single().value.asText(), "PrintIM in an APP6 EPPIM segment")
+            assertEquals(1441814L, jpg.find("PrintIM:PrintIM:PrintIM_0x0001").single().value.asLong())
+            assertEquals(84L, jpg.find("Ducky:Ducky:Quality").single().value.asLong())
+            assertEquals("Copyright 2004 Phil Harvey", jpg.find("Ducky:Ducky:Copyright").single().value.asText())
+            assertTrue(x(Fixtures.et("Nikon.jpg")).full.find("PrintIM:PrintIM:PrintIM_0x000e").isNotEmpty(), "PrintIM inside the Nikon MakerNote")
         }
 
         @Test
