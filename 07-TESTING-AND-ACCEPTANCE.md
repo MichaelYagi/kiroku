@@ -29,5 +29,10 @@
 - Security tests cover command injection resistance and process/resource limits.
 - Tests run on Linux and Windows (plus macOS where available), with platform-specific skips documented.
 
+## Oracle and fidelity tests (see `09-DECISIONS.md` D1, D3)
+- metadata-extractor (test scope only) and ExifTool, when installed, are independent oracles. Fixture tests compare Kiroku's decoded tag IDs and values with them, and record any known divergence in the manifest.
+- For every `BYTE_EXACT` observation, the test re-reads `fileOffset`/`byteLength` from the fixture and asserts the bytes are identical.
+- No non-native backend may emit `BYTE_EXACT`. MakerNotes and unknown tags must appear in `full` with numeric `tagId` and original bytes.
+
 ## Fixture acquisition
 Use permissively licensed/synthetic media where possible. Track source, license, checksum, expected tags, and known parser limitations in `fixtures/manifest.json`. Do not commit personal GPS or private photos. Never invent expected metadata: inspect fixtures with independent tools and record actual values.

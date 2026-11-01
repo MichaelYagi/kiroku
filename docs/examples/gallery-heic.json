@@ -1,0 +1,34 @@
+{
+  "mediaKind" : "IMAGE",
+  "format" : "HEIC",
+  "mimeType" : "image/heic",
+  "file" : {
+    "name" : "QuickTime.heic",
+    "extension" : "heic",
+    "sizeBytes" : 623,
+    "detectedFormat" : "HEIC",
+    "mimeType" : "image/heic"
+  },
+  "dimensions" : {
+    "storedWidth" : 1596,
+    "storedHeight" : 1064,
+    "displayWidth" : 1596,
+    "displayHeight" : 1064,
+    "megapixels" : 1.7,
+    "aspectRatio" : {
+      "numerator" : 3,
+      "denominator" : 2
+    }
+  },
+  "orientation" : {
+    "rotationDegrees" : 0,
+    "mirrored" : false,
+    "source" : "HEIF (no irot/imir: identity)"
+  },
+  "color" : {
+    "bitDepth" : 8,
+    "chromaSubsampling" : "4:2:0"
+  },
+  "keywords" : [ ],
+  "extra" : { }
+}

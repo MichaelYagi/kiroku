@@ -1,0 +1,116 @@
+{
+  "mediaKind" : "VIDEO",
+  "format" : "MOV",
+  "mimeType" : "video/quicktime",
+  "file" : {
+    "name" : "video_iphone_style.mov",
+    "extension" : "mov",
+    "sizeBytes" : 40067,
+    "detectedFormat" : "MOV",
+    "mimeType" : "video/quicktime"
+  },
+  "capturedAt" : {
+    "instant" : "2024-05-03T01:15:30Z",
+    "localDateTime" : "2024-05-03T10:15:30",
+    "offset" : "+09:00",
+    "timezoneKnown" : true,
+    "precision" : "SECOND",
+    "source" : "QuickTime:Keys:com.apple.quicktime.creationdate"
+  },
+  "modifiedAt" : "2024-05-03T01:15:31Z",
+  "dimensions" : {
+    "storedWidth" : 320,
+    "storedHeight" : 240,
+    "displayWidth" : 240,
+    "displayHeight" : 320,
+    "megapixels" : 0.08,
+    "aspectRatio" : {
+      "numerator" : 3,
+      "denominator" : 4
+    }
+  },
+  "orientation" : {
+    "rotationDegrees" : 90,
+    "mirrored" : false,
+    "transformMatrix" : [ 0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ],
+    "source" : "QuickTime:Track1:MatrixStructure"
+  },
+  "camera" : {
+    "make" : "Apple",
+    "model" : "iPhone 15 Pro",
+    "software" : "17.4.1"
+  },
+  "location" : {
+    "latitude" : 35.6895,
+    "longitude" : 139.6917,
+    "altitudeMeters" : 40.0,
+    "altitudeReference" : "UNKNOWN",
+    "source" : "QuickTime:Keys:com.apple.quicktime.location.ISO6709"
+  },
+  "color" : {
+    "bitDepth" : 8,
+    "chromaSubsampling" : "4:2:0"
+  },
+  "video" : {
+    "duration" : "PT1S",
+    "frameRate" : {
+      "numerator" : 30,
+      "denominator" : 1
+    },
+    "averageFrameRate" : {
+      "numerator" : 30,
+      "denominator" : 1
+    },
+    "codec" : "hevc",
+    "codecProfile" : "Main",
+    "codecLevel" : "2.0",
+    "bitRateBitsPerSecond" : 203088,
+    "container" : "MOV",
+    "streamCount" : 2,
+    "primaryStreamIndex" : 0,
+    "rotationDegrees" : 90,
+    "variableFrameRate" : false,
+    "timeBase" : {
+      "numerator" : 1,
+      "denominator" : 15360
+    },
+    "creationTime" : "2024-05-03T01:15:31Z",
+    "encoder" : "Lavf61.7.103",
+    "audioStreamCount" : 1,
+    "videoStreamCount" : 1,
+    "tracks" : [ {
+      "streamIndex" : 0,
+      "codec" : "hevc",
+      "width" : 320,
+      "height" : 240,
+      "frameRate" : {
+        "numerator" : 30,
+        "denominator" : 1
+      },
+      "bitRateBitsPerSecond" : 203088,
+      "duration" : "PT1S",
+      "rotationDegrees" : 90
+    } ]
+  },
+  "audio" : {
+    "duration" : "PT1.021333333S",
+    "codec" : "aac",
+    "sampleRateHz" : 48000,
+    "channels" : 1,
+    "channelLayout" : "mono",
+    "bitRateBitsPerSecond" : 70409,
+    "bitsPerSample" : 16,
+    "tracks" : [ {
+      "streamIndex" : 1,
+      "codec" : "aac",
+      "sampleRateHz" : 48000,
+      "channels" : 1,
+      "channelLayout" : "mono",
+      "bitRateBitsPerSecond" : 70409,
+      "bitsPerSample" : 16,
+      "duration" : "PT1.021333333S"
+    } ]
+  },
+  "keywords" : [ ],
+  "extra" : { }
+}

@@ -12,12 +12,17 @@ Build a production-quality, standalone Kotlin/JVM library that extracts the maxi
 6. `06-IMPLEMENTATION-PLAN.md`
 7. `07-TESTING-AND-ACCEPTANCE.md`
 8. `08-SHASHIN-INTEGRATION.md`
+9. `09-DECISIONS.md` — decision log; overrides earlier specs where they conflict.
+
+## Positioning
+Kiroku competes with Drew Noakes' metadata-extractor. It ships its own native parsers. metadata-extractor and ExifTool are test oracles only, and ExifTool/ffprobe are optional deep-mode backends. Never add metadata-extractor to a main source set.
 
 ## Non-negotiable requirements
 - Kotlin/JVM, Java 21 baseline unless project constraints require another supported LTS; Gradle Kotlin DSL; library-first, no mandatory server or framework.
 - Two outputs from a single extraction: exhaustive structured `full` metadata and stable, typed `gallery` metadata. Do not re-parse to obtain the gallery projection.
 - Consistent photo/video device and camera fields, with null for unavailable information. Never invent a camera, lens, GPS coordinate, or capture timestamp.
 - Preserve all original tags where feasible, including unknown/vendor tags, namespaces, stream indices, original types, units, and source provenance. Distinguish raw values from human-readable descriptions.
+- Expose original directories, numeric tag IDs, native data types, decoded values, and original bytes where available. Keep MakerNotes and unknown tags. Mark each value's fidelity (`BYTE_EXACT` / `BACKEND_RECONSTRUCTED` / `BACKEND_DECODED` / `DESCRIPTION_ONLY`), and never claim byte-exact when a backend can't guarantee it.
 - Support all requested extensions, with capability limitations clearly reported; never equate extension recognition with guaranteed full decoding or metadata coverage.
 - Metadata extraction only: no thumbnail rendering, transcoding, pixel decoding, image transformations, face recognition, database, HTTP service, or filesystem mutation.
 - Security: untrusted files, bounded processing, no shell interpolation, subprocess timeout, capped output, restricted paths, graceful partial results.
@@ -27,7 +32,7 @@ Build a production-quality, standalone Kotlin/JVM library that extracts the maxi
 
 ## Workflow
 - Before coding, inspect repository and available tooling. Do not assume an executable exists or a library supports a format; verify at runtime or via tests.
-- Create modules and data classes first, then image metadata extraction, ExifTool adapter, ffprobe adapter, normalization, public facade, tests, documentation.
+- Create modules and data classes first, then native image/RAW parsers, native video/audio parsers, ExifTool adapter, ffprobe adapter, normalization, public facade, tests, documentation.
 - Favor Apache-2.0/MIT-compatible dependencies; document licenses and any runtime requirements. ExifTool and FFmpeg/ffprobe are optional external executables, not bundled by default.
 - Implement graceful degradation if optional backends are unavailable.
 - After each phase run `./gradlew test` (and integration tests where tools exist), fix errors, and report actual outcomes.

@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+fixtures/media/** binary
+*.jpg binary
+*.png binary

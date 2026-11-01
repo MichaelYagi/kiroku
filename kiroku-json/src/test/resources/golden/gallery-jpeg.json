@@ -1,0 +1,94 @@
+{
+  "mediaKind" : "IMAGE",
+  "format" : "JPEG",
+  "mimeType" : "image/jpeg",
+  "file" : {
+    "name" : "jpeg_full_exif.jpg",
+    "extension" : "jpg",
+    "sizeBytes" : 25924,
+    "detectedFormat" : "JPEG",
+    "mimeType" : "image/jpeg"
+  },
+  "capturedAt" : {
+    "instant" : "2023-06-17T12:32:10.123Z",
+    "localDateTime" : "2023-06-17T14:32:10.123",
+    "offset" : "+02:00",
+    "timezoneKnown" : true,
+    "precision" : "MILLISECOND",
+    "source" : "EXIF:ExifIFD:DateTimeOriginal"
+  },
+  "modifiedAt" : "2023-06-18T07:00:00Z",
+  "dimensions" : {
+    "storedWidth" : 640,
+    "storedHeight" : 480,
+    "displayWidth" : 480,
+    "displayHeight" : 640,
+    "megapixels" : 0.31,
+    "aspectRatio" : {
+      "numerator" : 3,
+      "denominator" : 4
+    }
+  },
+  "orientation" : {
+    "exifCode" : 6,
+    "rotationDegrees" : 90,
+    "mirrored" : false,
+    "source" : "EXIF:IFD0:Orientation"
+  },
+  "camera" : {
+    "make" : "Kiroku Test Optics",
+    "model" : "KT-1000 Mark II",
+    "lensMake" : "Kiroku",
+    "lensModel" : "KT 35mm F1.8",
+    "lensSerialNumber" : "LS-0042",
+    "cameraSerialNumber" : "BODY-12345",
+    "software" : "KT Firmware 1.2.3"
+  },
+  "exposure" : {
+    "iso" : 400,
+    "exposureTimeSeconds" : 0.004,
+    "exposureTime" : {
+      "numerator" : 1,
+      "denominator" : 250
+    },
+    "apertureFNumber" : 2.8,
+    "focalLengthMm" : 35.0,
+    "focalLength35mmEquivalentMm" : 52.0,
+    "exposureBiasEv" : -0.7,
+    "meteringMode" : "PATTERN",
+    "exposureProgram" : "APERTURE_PRIORITY",
+    "flash" : {
+      "code" : 16,
+      "fired" : false,
+      "mode" : "OFF",
+      "redEyeReduction" : false,
+      "present" : true
+    },
+    "whiteBalance" : "AUTO"
+  },
+  "location" : {
+    "latitude" : 48.858222000000005,
+    "longitude" : 2.2944999999999998,
+    "altitudeMeters" : 35.5,
+    "altitudeReference" : "ABOVE_SEA_LEVEL",
+    "directionDegrees" : 123.4,
+    "locationTimestamp" : "2023-06-17T12:32:09Z",
+    "gpsDatum" : "WGS-84",
+    "source" : "EXIF:GPS:GPSLatitude"
+  },
+  "description" : {
+    "title" : "Eiffel Test",
+    "comment" : "Lavc61.19.101",
+    "artist" : "Test Photographer",
+    "copyright" : "CC0 Kiroku fixtures",
+    "credit" : "Kiroku",
+    "rating" : 4
+  },
+  "color" : {
+    "colorSpace" : "sRGB",
+    "bitDepth" : 8,
+    "chromaSubsampling" : "4:2:0"
+  },
+  "keywords" : [ "tower", "paris", "travel" ],
+  "extra" : { }
+}

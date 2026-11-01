@@ -10,6 +10,9 @@ Gallery output is a projection of full observations, never a separate extraction
 - RAW camera settings, white balance, exposure, lens identifiers, proprietary tags when backend supports them.
 - File and container: creation/modification timestamps, encoder, software, MIME, bitrate, stream languages, subtitles, chapter markers, timecodes, frame rate, pixel aspect, audio channels, HDR mastering metadata, content-light metadata.
 
+## Original values and fidelity
+Normalization reads typed decoded values, and never parses `displayValue`. Each `TagReference` in `fieldSources` points to an observation by backend, group path, numeric tag ID and occurrence, so a gallery field can be traced back to its original bytes. Precedence ties between equivalent values from several backends favour the native `BYTE_EXACT` observation. MakerNote and unknown tags stay in `full` even when gallery mapping doesn't use them. See `09-DECISIONS.md` D3.
+
 ## Cross-media mapping
 - `camera.make/model` from EXIF Make/Model, XMP camera tags, QuickTime make/model/device metadata, ExifTool composite/vendor fields, and supported device metadata atoms. Same public fields for photos and videos.
 - `camera.lensModel`, `exposure.iso`, `exposure.focalLengthMm`, `exposure.apertureFNumber`, `exposure.exposureTimeSeconds` map for both still and video when source tags exist; do not infer video shutter from FPS.

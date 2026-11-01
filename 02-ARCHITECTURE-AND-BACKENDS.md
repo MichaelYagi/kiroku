@@ -1,20 +1,21 @@
 # Architecture and Backends
 
+> Kiroku competes with Drew Noakes' metadata-extractor, so it ships its own native parsers. metadata-extractor and ExifTool are used only as test oracles. See `09-DECISIONS.md` (D1–D4).
+
 ## Modules
-- `metadata-core`: public API, models, type detection, orchestration, normalization, warnings.
-- `metadata-image`: JVM image metadata reader (e.g., Drew Noakes metadata-extractor), native tags and standard EXIF/IPTC/XMP extraction.
-- `metadata-exiftool`: optional ExifTool subprocess adapter for broad RAW, MakerNotes, HEIF, video camera tags, and vendor metadata.
-- `metadata-ffprobe`: optional FFprobe adapter for containers, video/audio streams, rotations, codec, HDR, durations, GPS/device tags when present.
-- `metadata-json`: optional kotlinx.serialization or Jackson integration with stable schema.
-- `metadata-cli`: example/demo executable, not required for embedding.
+- `kiroku-core`: public API, models, signature detection, orchestration, **native metadata parsers** (TIFF/EXIF/RAW + MakerNotes, JPEG, PNG, GIF, WebP/RIFF, BMP, ISO-BMFF/QuickTime/HEIF, AVI, WAV, Matroska/WebM, HEVC Annex-B, XMP, IPTC IIM, ICC), normalization, warnings. Only runtime dependency: kotlinx-coroutines.
+- `kiroku-exiftool`: optional ExifTool subprocess adapter (deep mode) for extra proprietary MakerNote decoding and vendor metadata.
+- `kiroku-ffprobe`: optional FFprobe adapter (deep mode) for extra codec, stream, side-data and HDR detail.
+- `kiroku-json`: optional Jackson-streaming JSON serialization with a stable, versioned schema.
+- `kiroku-cli`: example/demo executable, not required for embedding.
 
 ## Extraction pipeline
 `Path -> validate -> detect signature -> choose backends -> collect raw tagged observations -> merge without losing collisions -> normalize gallery projection -> return result + diagnostics`.
 
 ## Backend responsibilities
-1. Built-in JVM: file stats and signature probing; use metadata-extractor for image metadata when supported. No image pixel decoding required.
-2. ExifTool: optional rich image/RAW/HEIC and maker-specific metadata. Request structured JSON with group-qualified keys, numeric/raw values where practical, and separate human-readable descriptions if needed. Preserve duplicate tags/groups and embedded paths; ExifTool JSON flags can change naming/typing, so test invocation and avoid assuming all keys are unique. Capture tool version.
-3. FFprobe: optional `-show_format -show_streams -show_chapters` JSON; optionally `-show_frames` only in explicitly bounded deep mode. Capture all stream tags and side data, display matrices, color info, audio details. Use `-v error`, `-of json`, `-i <path>` via ProcessBuilder argument array, never a shell. Some tags are absent depending on muxer/device.
+1. Native (Kiroku): file stats, signature probing, and metadata parsing for every supported format, at all depths. Reads only metadata structures through bounded random access; no pixel or frame decoding. It is the only backend allowed to emit `ValueFidelity.BYTE_EXACT` observations (verbatim bytes plus file offset, numeric tag ID, native type code and count).
+2. ExifTool (deep mode by default): optional rich image/RAW/HEIC and maker-specific metadata. Request structured JSON with group-qualified keys, numeric/raw values where practical, and separate human-readable descriptions if needed. Preserve duplicate tags/groups and embedded paths; ExifTool JSON flags can change naming/typing, so test invocation and avoid assuming all keys are unique. Capture tool version. ExifTool values are `BACKEND_DECODED`; binary values obtained with `-b` are `BACKEND_RECONSTRUCTED`, never byte-exact.
+3. FFprobe (deep mode by default): optional `-show_format -show_streams -show_chapters` JSON; optionally `-show_frames` only in explicitly bounded deep mode. Capture all stream tags and side data, display matrices, color info, audio details. Use `-v error`, `-of json`, `-i <path>` via ProcessBuilder argument array, never a shell. Some tags are absent depending on muxer/device.
 4. Merge: retain every observation in `full`; normalized fields use precedence and plausibility rules, not last-writer-wins. Preserve conflicts in diagnostics/provenance.
 
 ## Process hardening
@@ -32,4 +33,7 @@
 - Never use human-readable tag description strings to parse numeric values if typed raw values exist.
 
 ## Dependency caveats
-Verify library/runtime compatibility and licenses before choosing versions. ExifTool, FFmpeg/ffprobe, and codecs are not bundled; include installation instructions and capability checks. Pure-JVM baseline may have substantially less coverage for proprietary RAW and video metadata.
+Verify library/runtime compatibility and licenses before choosing versions. ExifTool, FFmpeg/ffprobe, and codecs are not bundled; include installation instructions and capability checks. The native baseline decodes standard EXIF/TIFF/GPS/XMP/IPTC/ICC and container structures fully, and recognised MakerNote IFDs byte-exactly. Human-readable names for many proprietary MakerNote tags may still need ExifTool deep mode. Unrecognised tags are always kept with their numeric ID and raw bytes.
+
+## Backend modes
+`BackendMode.DISABLED | DEEP_ONLY (default for ExifTool/ffprobe) | ALWAYS | REQUIRED`. The status policy for unavailable backends is in `09-DECISIONS.md` D2.

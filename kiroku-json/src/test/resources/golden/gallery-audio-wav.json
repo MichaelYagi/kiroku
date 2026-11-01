@@ -1,0 +1,46 @@
+{
+  "mediaKind" : "AUDIO",
+  "format" : "WAV",
+  "mimeType" : "audio/wav",
+  "file" : {
+    "name" : "audio_bwf.wav",
+    "extension" : "wav",
+    "sizeBytes" : 96726,
+    "detectedFormat" : "WAV",
+    "mimeType" : "audio/wav"
+  },
+  "capturedAt" : {
+    "localDateTime" : "2022-03-04T05:06:07",
+    "timezoneKnown" : false,
+    "precision" : "SECOND",
+    "source" : "RIFF:BroadcastExtension:DateTimeOriginal"
+  },
+  "camera" : {
+    "software" : "Lavf61.7.103"
+  },
+  "description" : {
+    "title" : "WAV Title",
+    "artist" : "WAV Artist"
+  },
+  "audio" : {
+    "duration" : "PT1S",
+    "codec" : "pcm",
+    "sampleRateHz" : 48000,
+    "channels" : 1,
+    "channelLayout" : "mono",
+    "bitRateBitsPerSecond" : 768000,
+    "bitsPerSample" : 16,
+    "tracks" : [ {
+      "streamIndex" : 0,
+      "codec" : "pcm",
+      "sampleRateHz" : 48000,
+      "channels" : 1,
+      "channelLayout" : "mono",
+      "bitRateBitsPerSecond" : 768000,
+      "bitsPerSample" : 16,
+      "duration" : "PT1S"
+    } ]
+  },
+  "keywords" : [ ],
+  "extra" : { }
+}

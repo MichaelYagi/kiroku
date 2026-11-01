@@ -1,0 +1,71 @@
+{
+  "mediaKind" : "RAW_IMAGE",
+  "format" : "NEF",
+  "mimeType" : "image/x-nikon-nef",
+  "file" : {
+    "name" : "Nikon.nef",
+    "extension" : "nef",
+    "sizeBytes" : 6188,
+    "detectedFormat" : "NEF",
+    "mimeType" : "image/x-nikon-nef"
+  },
+  "capturedAt" : {
+    "localDateTime" : "2004-06-09T16:02:35",
+    "timezoneKnown" : false,
+    "precision" : "MILLISECOND",
+    "source" : "EXIF:ExifIFD:DateTimeOriginal"
+  },
+  "dimensions" : {
+    "storedWidth" : 3040,
+    "storedHeight" : 2014,
+    "displayWidth" : 3040,
+    "displayHeight" : 2014,
+    "megapixels" : 6.12,
+    "aspectRatio" : {
+      "numerator" : 80,
+      "denominator" : 53
+    }
+  },
+  "orientation" : {
+    "exifCode" : 1,
+    "rotationDegrees" : 0,
+    "mirrored" : false,
+    "source" : "EXIF:IFD0:Orientation"
+  },
+  "camera" : {
+    "make" : "NIKON CORPORATION",
+    "model" : "NIKON D70",
+    "software" : "Nikon Capture Editor 4.3.1 W"
+  },
+  "exposure" : {
+    "iso" : 200,
+    "exposureTimeSeconds" : 0.05,
+    "exposureTime" : {
+      "numerator" : 5,
+      "denominator" : 100
+    },
+    "apertureFNumber" : 3.5,
+    "focalLengthMm" : 18.0,
+    "exposureBiasEv" : 0.0,
+    "meteringMode" : "PATTERN",
+    "exposureProgram" : "APERTURE_PRIORITY",
+    "flash" : {
+      "code" : 0,
+      "fired" : false,
+      "redEyeReduction" : false,
+      "present" : true
+    },
+    "focusMode" : "AF-S"
+  },
+  "description" : {
+    "caption" : "A caption"
+  },
+  "color" : {
+    "colorSpace" : "sRGB",
+    "iccProfileName" : "Nikon Adobe RGB 4.0.0.3000",
+    "iccProfileDescription" : "Nikon Adobe RGB 4.0.0.3000",
+    "bitDepth" : 8
+  },
+  "keywords" : [ ],
+  "extra" : { }
+}

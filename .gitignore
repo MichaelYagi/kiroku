@@ -1,0 +1,11 @@
+.gradle/
+build/
+buildSrc/build/
+buildSrc/.gradle/
+.idea/
+*.iml
+out/
+.kotlin/
+local.properties
+/fixtures/external/
+/.tools/

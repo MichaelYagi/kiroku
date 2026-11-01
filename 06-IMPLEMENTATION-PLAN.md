@@ -6,14 +6,14 @@ Create Gradle Kotlin DSL multi-module repo, JVM toolchain, formatter, static che
 ## Phase 1 — Public models
 Implement API from `03-PUBLIC-API.md`, options, diagnostics, typed values, rational numbers, provenance, statuses, immutable objects, Kotlin/Java tests, and serialization snapshots. Ensure no `Any` or polymorphic ambiguity in JSON schema.
 
-## Phase 2 — Detection and baseline
-Implement safe file validation, signature probing, extension mismatch warning, basic file info, baseline image metadata reader, TIFF/EXIF orientation and GPS normalization, date parser, capture-time provenance. Support malformed/truncated fixture handling.
+## Phase 2 — Detection and native image/RAW parsers
+Implement safe file validation, signature probing, extension mismatch warning, and basic file info. Build Kiroku's native parsers: byte-exact TIFF/EXIF IFD walker (all RAW variants, SubIFDs, GPS, Interop, MakerNote IFDs), JPEG, PNG, GIF, WebP, BMP, HEIF, XMP, IPTC and ICC. Add the date parser and capture-time provenance. Handle malformed/truncated fixtures. No metadata-extractor in main code (`09-DECISIONS.md` D1).
 
-## Phase 3 — Rich image/RAW backend
-Add optional ExifTool process runner, robust JSON mapping, group-aware duplicate tags, bounded output, MakerNotes/XMP/IPTC/ICC, HEIC/HEIF and proprietary RAW. Merge with baseline without losing original observations.
+## Phase 3 — Native video/audio parsers
+ISO-BMFF/QuickTime (incl. Apple keys, ISO 6709 GPS, display matrix), AVI, WAV (INFO/BWF/iXML), Matroska/WebM, HEVC Annex-B SPS. Validate MOV phone-style footage with device tags and MP4 stripped of them.
 
-## Phase 4 — Video/audio backend
-Add optional ffprobe process runner, all stream and format tags, chapters, side data, display matrix, HDR/color, codec and audio. Add ExifTool video metadata merge and photo/video camera/device normalization. Validate MOV phone footage with device tags and MP4 stripped of them.
+## Phase 4 — Optional deep-mode backends
+ExifTool process runner (robust JSON mapping with duplicate keys, group-aware, bounded output) and ffprobe runner (streams, format, chapters, side data). Merge with native observations without losing any; mark fidelity honestly.
 
 ## Phase 5 — Gallery projection
 Implement field-specific precedence, timezone handling, orientation/display dimension math, GPS normalization, unit conversions, all camera and exposure fields for both photo and video, privacy redaction, conflict provenance.

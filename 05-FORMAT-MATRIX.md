@@ -2,21 +2,23 @@
 
 Recognize every extension below, but report metadata capability based on actual parsers and file signatures. A recognized extension does not guarantee metadata extraction.
 
-| Extensions | Actual media kind | Primary path | Rich fallback / caveats |
+All primary paths are Kiroku's native parsers (`09-DECISIONS.md` D1). Deep-mode backends are optional.
+
+| Extensions | Actual media kind | Primary path (native) | Deep-mode extras / caveats |
 |---|---|---|---|
-| JPG, JPEG | image | metadata-extractor | ExifTool for MakerNotes, XMP, ICC |
-| PNG | image | metadata-extractor | ExifTool for eXIf/iTXt/XMP/ICC |
-| BMP | image | header/JVM parser | Usually sparse camera metadata |
-| GIF | image/animation | image metadata parser | Animation frames/loop if available; not assumed |
-| WEBP | image/animation | RIFF/parser | ExifTool for EXIF/XMP/ICC; animated WebP |
-| HEIF, HEIC | image/sequence | HEIF-capable backend | ExifTool, validate actual container and metadata |
-| TIF, TIFF | image or RAW image | TIFF IFD parser | ExifTool; multi-page, RAW-in-TIFF ambiguity |
-| NEF, CR2, ORF, ARW, RW2, RWL, SRW, DNG | RAW image | metadata-extractor where supported | ExifTool for broad proprietary tags |
-| MP4, MOV | video/audio container | ffprobe | ExifTool for device, GPS, camera, maker tags |
-| AVI | video/audio container | ffprobe | Limited embedded camera metadata common |
-| WEBM | video/audio container | ffprobe | Usually sparse camera tags |
-| HEVC | video elementary stream | ffprobe | May lack timestamps, duration, device/GPS |
-| WAV | audio | ffprobe | RIFF INFO/BWF/iXML if available; no assumed video |
+| JPG, JPEG | image | JPEG markers → EXIF (byte-exact), XMP (+Extended), IPTC/APP13, ICC, JFIF, MPF | ExifTool for proprietary MakerNote names |
+| PNG | image | PNG chunks: IHDR, eXIf, tEXt/zTXt/iTXt, iCCP, pHYs, tIME, acTL | ExifTool |
+| BMP | image | BITMAPINFOHEADER variants | Usually sparse camera metadata |
+| GIF | image/animation | GIF blocks: frames, NETSCAPE loop, comments, XMP app ext | — |
+| WEBP | image/animation | RIFF: VP8/VP8L/VP8X, ANIM/ANMF, EXIF, XMP, ICCP | ExifTool |
+| HEIF, HEIC | image/sequence | ISO-BMFF meta: ispe, irot, imir, colr, pixi, Exif/XMP items | ExifTool |
+| TIF, TIFF | image or RAW image | TIFF IFD walker, multi-page, SubIFDs | ExifTool; RAW-in-TIFF classification |
+| NEF, CR2, ORF, ARW, RW2, RWL, SRW, DNG | RAW image | TIFF-variant IFD walker + MakerNote IFDs (byte-exact) | ExifTool for extra vendor tag names |
+| MP4, MOV | video/audio container | ISO-BMFF/QuickTime: mvhd, tkhd matrix, mdhd, stsd, udta, meta/keys/ilst, ©xyz | ffprobe, ExifTool |
+| AVI | video/audio container | RIFF: avih, strh/strf, INFO, IDIT | ffprobe |
+| WEBM | video/audio container | EBML/Matroska: Info, Tracks, Tags | ffprobe |
+| HEVC | video elementary stream | Annex-B VPS/SPS parsing (profile, level, size, chroma, bit depth, VUI) | ffprobe for duration/frame count |
+| WAV | audio | RIFF: fmt, LIST/INFO, bext (BWF), iXML, data size | ffprobe |
 
 ## Requirements
 - Include MIME detection for common signatures, with explicit unknown and mislabeled-file behavior.

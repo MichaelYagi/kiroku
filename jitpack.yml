@@ -1,0 +1,4 @@
+# JitPack builds releases from Git tags: https://jitpack.io/#MichaelYagi/kiroku
+# The build targets Java 17 (09-DECISIONS.md D6) and Gradle 9 needs JDK 17+.
+jdk:
+  - openjdk17

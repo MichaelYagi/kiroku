@@ -78,6 +78,22 @@ Required nested model fields:
 
 `FullMetadata` must contain file probe information, every backend's groups/directories/tags, format/container information, every stream, chapters, embedded metadata, and raw observations. A raw observation must include `backend`, `groupPath`, `tagId?`, `tagName`, `namespace?`, `valueType`, `value`, `displayValue?`, `unit?`, `streamIndex?`, `occurrence`, and `sourcePath?`. Preserve collisions using lists, never a flat `Map<String,String>`.
 
+### Original values and fidelity (see `09-DECISIONS.md` D3)
+Each `RawObservation` additionally carries:
+- `tagId: Long?`: the numeric tag ID (TIFF/EXIF tag, IPTC dataset `record*256+dataset`, box/chunk FourCC as a 32-bit integer, EBML element ID). The hex form is available through `tagIdHex`.
+- `known: Boolean`: whether Kiroku's tag table names this tag. Unknown tags are never dropped.
+- `nativeType: NativeType?`: `system` (`TIFF`, `IPTC`, `ISOBMFF`, `RIFF`, `EBML`, `XMP`, `ExifTool`, `ffprobe`), `name` (e.g. `RATIONAL`), `code` (e.g. TIFF type 5), `count` (component count).
+- `original: OriginalValue?`: `fidelity`, `bytes: ByteString?`, `fileOffset: Long?`, `byteLength: Long?`, `byteOrder: ByteOrderMark?`, `omittedReason: OmissionReason?` (`SIZE_LIMIT`, `OUT_OF_BOUNDS`, `NOT_REQUESTED`).
+- `fidelity: ValueFidelity`: `BYTE_EXACT` (native parser, verbatim at a known offset), `BACKEND_RECONSTRUCTED` (backend-provided bytes, not guaranteed identical), `BACKEND_DECODED` (typed value only), or `DESCRIPTION_ONLY`.
+
+`FullMetadata.directories` lists every parsed directory (EXIF IFD, MakerNote, XMP packet, IPTC record, ICC profile, box, chunk) with its path, backend, file offset, length, byte order and entry count. MakerNotes are kept as a byte-exact blob in every case, and also parsed into entries when the vendor layout is recognised.
+
+### Additional `ExtractionOptions` fields (appended, all defaulted)
+`rawValueByteLimit = 65536`, `maxBinaryPayloadBytes = 16 MiB`, `computeChecksum = false`, `fileSystemTimeAsCaptureFallback = false`, `limits: ResourceLimits`. Process-wide settings (`exiftool`/`ffprobe` `BackendConfig` with `BackendMode`, executable path, allowed roots, symlink policy, batch parallelism) live in `MetadataConfig`.
+
+### Java interop
+`extractFuture(path, options): CompletableFuture<MetadataResult>` complements `suspend extractAsync`. `extractBatchIterator(...)` returns a `CloseableIterator` for Java. Builders: `ExtractionOptions.builder()`, `MetadataConfig.builder()`.
+
 ## Ergonomics
 ```kotlin
 MediaMetadata.create().use { extractor ->

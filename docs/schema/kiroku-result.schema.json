@@ -1,0 +1,1310 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kiroku.dev/schema/kiroku-result-1.0.0.json",
+  "title": "Kiroku MetadataResult",
+  "description": "Output of dev.kiroku.json.KirokuJson.toJson, schema version 1.0.0. With JsonOptions.includeNulls=false (default) absent fields are omitted; with includeNulls=true they are written as null.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "gallery",
+    "diagnostics",
+    "backendRuns"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "status": {
+      "enum": [
+        "COMPLETE",
+        "PARTIAL",
+        "UNSUPPORTED",
+        "FAILED"
+      ]
+    },
+    "gallery": {
+      "$ref": "#/$defs/GalleryMetadata"
+    },
+    "full": {
+      "$ref": "#/$defs/FullMetadata"
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/MetadataDiagnostic"
+      }
+    },
+    "backendRuns": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/BackendRun"
+      }
+    }
+  },
+  "$defs": {
+    "Rational": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "numerator": {
+          "type": "integer"
+        },
+        "denominator": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "numerator",
+        "denominator"
+      ]
+    },
+    "NormalizedValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "TEXT",
+            "INTEGER",
+            "DECIMAL",
+            "RATIONAL",
+            "BOOLEAN",
+            "BINARY",
+            "LIST",
+            "OBJECT",
+            "NULL"
+          ]
+        },
+        "value": {
+          "description": "Shape depends on type: string (TEXT), integer (INTEGER), number or 'NaN'/'Infinity' string (DECIMAL), Rational (RATIONAL), boolean (BOOLEAN), array of NormalizedValue (LIST), map of NormalizedValue (OBJECT). Absent for BINARY and NULL."
+        },
+        "length": {
+          "type": "integer",
+          "description": "Byte length, BINARY only. Bytes are in RawObservation.original."
+        }
+      }
+    },
+    "CaptureTimestamp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "instant": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "localDateTime": {
+          "type": "string",
+          "description": "ISO local date-time without offset"
+        },
+        "offset": {
+          "type": "string"
+        },
+        "timezoneKnown": {
+          "type": "boolean"
+        },
+        "precision": {
+          "enum": [
+            "YEAR",
+            "MONTH",
+            "DAY",
+            "MINUTE",
+            "SECOND",
+            "MILLISECOND",
+            "MICROSECOND",
+            "NANOSECOND"
+          ]
+        },
+        "source": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "timezoneKnown",
+        "precision",
+        "source"
+      ]
+    },
+    "Dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "storedWidth": {
+          "type": "integer"
+        },
+        "storedHeight": {
+          "type": "integer"
+        },
+        "displayWidth": {
+          "type": "integer"
+        },
+        "displayHeight": {
+          "type": "integer"
+        },
+        "megapixels": {
+          "type": "number"
+        },
+        "pixelAspectRatio": {
+          "$ref": "#/$defs/Rational"
+        },
+        "aspectRatio": {
+          "$ref": "#/$defs/Rational"
+        }
+      }
+    },
+    "Orientation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "exifCode": {
+          "type": "integer"
+        },
+        "rotationDegrees": {
+          "enum": [
+            0,
+            90,
+            180,
+            270
+          ]
+        },
+        "mirrored": {
+          "type": "boolean"
+        },
+        "transformMatrix": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "source": {
+          "type": "string"
+        }
+      }
+    },
+    "CameraMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "make": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "deviceName": {
+          "type": "string"
+        },
+        "lensMake": {
+          "type": "string"
+        },
+        "lensModel": {
+          "type": "string"
+        },
+        "lensSerialNumber": {
+          "type": "string"
+        },
+        "cameraSerialNumber": {
+          "type": "string"
+        },
+        "firmware": {
+          "type": "string"
+        },
+        "software": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "cameraType": {
+          "type": "string"
+        },
+        "deviceIdentifier": {
+          "type": "string"
+        }
+      }
+    },
+    "FlashInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "fired": {
+          "type": "boolean"
+        },
+        "mode": {
+          "enum": [
+            "ON",
+            "OFF",
+            "AUTO"
+          ]
+        },
+        "redEyeReduction": {
+          "type": "boolean"
+        },
+        "present": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ExposureMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "iso": {
+          "type": "integer"
+        },
+        "exposureTimeSeconds": {
+          "type": "number"
+        },
+        "exposureTime": {
+          "$ref": "#/$defs/Rational"
+        },
+        "apertureFNumber": {
+          "type": "number"
+        },
+        "focalLengthMm": {
+          "type": "number"
+        },
+        "focalLength35mmEquivalentMm": {
+          "type": "number"
+        },
+        "exposureBiasEv": {
+          "type": "number"
+        },
+        "meteringMode": {
+          "type": "string"
+        },
+        "exposureProgram": {
+          "type": "string"
+        },
+        "flash": {
+          "$ref": "#/$defs/FlashInfo"
+        },
+        "whiteBalance": {
+          "type": "string"
+        },
+        "focusMode": {
+          "type": "string"
+        },
+        "digitalZoomRatio": {
+          "type": "number"
+        },
+        "subjectDistanceMeters": {
+          "type": "number"
+        },
+        "shutterSpeedApex": {
+          "type": "number"
+        },
+        "brightnessValue": {
+          "type": "number"
+        },
+        "sceneType": {
+          "type": "string"
+        },
+        "stabilization": {
+          "type": "string"
+        },
+        "hdrMode": {
+          "type": "string"
+        },
+        "shootingMode": {
+          "type": "string"
+        }
+      }
+    },
+    "GeoMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "altitudeMeters": {
+          "type": "number"
+        },
+        "altitudeReference": {
+          "enum": [
+            "ABOVE_SEA_LEVEL",
+            "BELOW_SEA_LEVEL",
+            "ABOVE_ELLIPSOID",
+            "UNKNOWN"
+          ]
+        },
+        "accuracyMeters": {
+          "type": "number"
+        },
+        "headingDegrees": {
+          "type": "number"
+        },
+        "speedMetersPerSecond": {
+          "type": "number"
+        },
+        "directionDegrees": {
+          "type": "number"
+        },
+        "locationTimestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "gpsDatum": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        }
+      }
+    },
+    "DescriptionMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "caption": {
+          "type": "string"
+        },
+        "comment": {
+          "type": "string"
+        },
+        "artist": {
+          "type": "string"
+        },
+        "copyright": {
+          "type": "string"
+        },
+        "creator": {
+          "type": "string"
+        },
+        "credit": {
+          "type": "string"
+        },
+        "rights": {
+          "type": "string"
+        },
+        "originalFilename": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "album": {
+          "type": "string"
+        },
+        "rating": {
+          "type": "integer",
+          "minimum": -1,
+          "maximum": 5
+        }
+      }
+    },
+    "ColorMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "colorSpace": {
+          "type": "string"
+        },
+        "iccProfileName": {
+          "type": "string"
+        },
+        "iccProfileDescription": {
+          "type": "string"
+        },
+        "transferCharacteristics": {
+          "type": "string"
+        },
+        "colorPrimaries": {
+          "type": "string"
+        },
+        "matrixCoefficients": {
+          "type": "string"
+        },
+        "pixelFormat": {
+          "type": "string"
+        },
+        "chromaSubsampling": {
+          "type": "string"
+        },
+        "bitDepth": {
+          "type": "integer"
+        },
+        "bitsPerPixel": {
+          "type": "integer"
+        },
+        "hdr": {
+          "type": "boolean"
+        }
+      }
+    },
+    "VideoTrackSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "streamIndex": {
+          "type": "integer"
+        },
+        "codec": {
+          "type": "string"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "frameRate": {
+          "$ref": "#/$defs/Rational"
+        },
+        "bitRateBitsPerSecond": {
+          "type": "integer"
+        },
+        "duration": {
+          "type": "string",
+          "description": "ISO-8601 duration, e.g. PT12.5S"
+        },
+        "language": {
+          "type": "string"
+        },
+        "rotationDegrees": {
+          "type": "integer"
+        },
+        "isDefault": {
+          "type": "boolean"
+        }
+      }
+    },
+    "AudioTrackSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "streamIndex": {
+          "type": "integer"
+        },
+        "codec": {
+          "type": "string"
+        },
+        "sampleRateHz": {
+          "type": "integer"
+        },
+        "channels": {
+          "type": "integer"
+        },
+        "channelLayout": {
+          "type": "string"
+        },
+        "bitRateBitsPerSecond": {
+          "type": "integer"
+        },
+        "bitsPerSample": {
+          "type": "integer"
+        },
+        "duration": {
+          "type": "string",
+          "description": "ISO-8601 duration, e.g. PT12.5S"
+        },
+        "language": {
+          "type": "string"
+        },
+        "isDefault": {
+          "type": "boolean"
+        }
+      }
+    },
+    "VideoMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "duration": {
+          "type": "string",
+          "description": "ISO-8601 duration, e.g. PT12.5S"
+        },
+        "frameRate": {
+          "$ref": "#/$defs/Rational"
+        },
+        "averageFrameRate": {
+          "$ref": "#/$defs/Rational"
+        },
+        "codec": {
+          "type": "string"
+        },
+        "codecProfile": {
+          "type": "string"
+        },
+        "codecLevel": {
+          "type": "string"
+        },
+        "bitRateBitsPerSecond": {
+          "type": "integer"
+        },
+        "container": {
+          "type": "string"
+        },
+        "streamCount": {
+          "type": "integer"
+        },
+        "primaryStreamIndex": {
+          "type": "integer"
+        },
+        "rotationDegrees": {
+          "type": "integer"
+        },
+        "variableFrameRate": {
+          "type": "boolean"
+        },
+        "timeBase": {
+          "$ref": "#/$defs/Rational"
+        },
+        "creationTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "encoder": {
+          "type": "string"
+        },
+        "audioStreamCount": {
+          "type": "integer"
+        },
+        "videoStreamCount": {
+          "type": "integer"
+        },
+        "tracks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VideoTrackSummary"
+          }
+        }
+      }
+    },
+    "AudioMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "duration": {
+          "type": "string",
+          "description": "ISO-8601 duration, e.g. PT12.5S"
+        },
+        "codec": {
+          "type": "string"
+        },
+        "sampleRateHz": {
+          "type": "integer"
+        },
+        "channels": {
+          "type": "integer"
+        },
+        "channelLayout": {
+          "type": "string"
+        },
+        "bitRateBitsPerSecond": {
+          "type": "integer"
+        },
+        "bitsPerSample": {
+          "type": "integer"
+        },
+        "language": {
+          "type": "string"
+        },
+        "tracks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AudioTrackSummary"
+          }
+        }
+      }
+    },
+    "AnimationMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "frameCount": {
+          "type": "integer"
+        },
+        "loopCount": {
+          "type": "integer"
+        },
+        "duration": {
+          "type": "string",
+          "description": "ISO-8601 duration, e.g. PT12.5S"
+        }
+      }
+    },
+    "GalleryFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "extension": {
+          "type": "string"
+        },
+        "sizeBytes": {
+          "type": "integer"
+        },
+        "detectedFormat": {
+          "type": "string"
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "createdAtFileSystem": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "modifiedAtFileSystem": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "checksum": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "name",
+        "sizeBytes",
+        "detectedFormat"
+      ]
+    },
+    "GalleryMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mediaKind": {
+          "enum": [
+            "IMAGE",
+            "VIDEO",
+            "AUDIO",
+            "RAW_IMAGE",
+            "UNKNOWN"
+          ]
+        },
+        "format": {
+          "type": "string"
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "file": {
+          "$ref": "#/$defs/GalleryFile"
+        },
+        "capturedAt": {
+          "$ref": "#/$defs/CaptureTimestamp"
+        },
+        "modifiedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "dimensions": {
+          "$ref": "#/$defs/Dimensions"
+        },
+        "orientation": {
+          "$ref": "#/$defs/Orientation"
+        },
+        "camera": {
+          "$ref": "#/$defs/CameraMetadata"
+        },
+        "exposure": {
+          "$ref": "#/$defs/ExposureMetadata"
+        },
+        "location": {
+          "$ref": "#/$defs/GeoMetadata"
+        },
+        "description": {
+          "$ref": "#/$defs/DescriptionMetadata"
+        },
+        "color": {
+          "$ref": "#/$defs/ColorMetadata"
+        },
+        "video": {
+          "$ref": "#/$defs/VideoMetadata"
+        },
+        "audio": {
+          "$ref": "#/$defs/AudioMetadata"
+        },
+        "animation": {
+          "$ref": "#/$defs/AnimationMetadata"
+        },
+        "keywords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extra": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/NormalizedValue"
+          }
+        }
+      },
+      "required": [
+        "mediaKind",
+        "file",
+        "keywords",
+        "extra"
+      ]
+    },
+    "FileProbe": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "extension": {
+          "type": "string"
+        },
+        "sizeBytes": {
+          "type": "integer"
+        },
+        "detectedFormat": {
+          "type": "string"
+        },
+        "mediaKind": {
+          "enum": [
+            "IMAGE",
+            "VIDEO",
+            "AUDIO",
+            "RAW_IMAGE",
+            "UNKNOWN"
+          ]
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "extensionFormat": {
+          "type": "string"
+        },
+        "extensionMatches": {
+          "type": "boolean"
+        },
+        "signatureHex": {
+          "type": "string"
+        },
+        "brands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAtFileSystem": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "modifiedAtFileSystem": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "checksum": {
+          "type": "string"
+        }
+      }
+    },
+    "ContainerInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "type": "string"
+        },
+        "brands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "duration": {
+          "type": "string",
+          "description": "ISO-8601 duration, e.g. PT12.5S"
+        },
+        "bitRateBitsPerSecond": {
+          "type": "integer"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/NormalizedValue"
+          }
+        }
+      }
+    },
+    "DirectoryInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "backend": {
+          "type": "string"
+        },
+        "path": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "kind": {
+          "type": "string"
+        },
+        "fileOffset": {
+          "type": "integer"
+        },
+        "length": {
+          "type": "integer"
+        },
+        "byteOrder": {
+          "enum": [
+            "BIG_ENDIAN",
+            "LITTLE_ENDIAN"
+          ]
+        },
+        "entryCount": {
+          "type": "integer"
+        },
+        "parsed": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "StreamInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer"
+        },
+        "backend": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "VIDEO",
+            "AUDIO",
+            "SUBTITLE",
+            "DATA",
+            "TIMED_METADATA",
+            "IMAGE",
+            "OTHER"
+          ]
+        },
+        "codec": {
+          "type": "string"
+        },
+        "codecTag": {
+          "type": "string"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/NormalizedValue"
+          }
+        }
+      }
+    },
+    "ChapterInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer"
+        },
+        "backend": {
+          "type": "string"
+        },
+        "start": {
+          "type": "string",
+          "description": "ISO-8601 duration, e.g. PT12.5S"
+        },
+        "end": {
+          "type": "string",
+          "description": "ISO-8601 duration, e.g. PT12.5S"
+        },
+        "title": {
+          "type": "string"
+        }
+      }
+    },
+    "EmbeddedImageInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer"
+        },
+        "backend": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "PRIMARY",
+            "PAGE",
+            "THUMBNAIL",
+            "PREVIEW",
+            "AUXILIARY",
+            "FRAME",
+            "OTHER"
+          ]
+        },
+        "groupPath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "compression": {
+          "type": "string"
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "fileOffset": {
+          "type": "integer"
+        },
+        "length": {
+          "type": "integer"
+        }
+      }
+    },
+    "NativeType": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "system": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer"
+        },
+        "count": {
+          "type": "integer"
+        }
+      }
+    },
+    "OriginalValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fidelity": {
+          "enum": [
+            "BYTE_EXACT",
+            "BACKEND_RECONSTRUCTED",
+            "BACKEND_DECODED",
+            "DESCRIPTION_ONLY"
+          ]
+        },
+        "bytesBase64": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "fileOffset": {
+          "type": "integer"
+        },
+        "byteLength": {
+          "type": "integer"
+        },
+        "byteOrder": {
+          "enum": [
+            "BIG_ENDIAN",
+            "LITTLE_ENDIAN"
+          ]
+        },
+        "omittedReason": {
+          "enum": [
+            "SIZE_LIMIT",
+            "OUT_OF_BOUNDS",
+            "NOT_REQUESTED",
+            "REDACTED"
+          ]
+        }
+      },
+      "required": [
+        "fidelity"
+      ]
+    },
+    "RawObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer"
+        },
+        "backend": {
+          "type": "string"
+        },
+        "groupPath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tagId": {
+          "type": "integer"
+        },
+        "tagIdHex": {
+          "type": "string"
+        },
+        "tagName": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "known": {
+          "type": "boolean"
+        },
+        "valueType": {
+          "type": "string"
+        },
+        "nativeType": {
+          "$ref": "#/$defs/NativeType"
+        },
+        "value": {
+          "$ref": "#/$defs/NormalizedValue"
+        },
+        "displayValue": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "streamIndex": {
+          "type": "integer"
+        },
+        "occurrence": {
+          "type": "integer"
+        },
+        "sourcePath": {
+          "type": "string"
+        },
+        "fidelity": {
+          "enum": [
+            "BYTE_EXACT",
+            "BACKEND_RECONSTRUCTED",
+            "BACKEND_DECODED",
+            "DESCRIPTION_ONLY"
+          ]
+        },
+        "original": {
+          "$ref": "#/$defs/OriginalValue"
+        }
+      },
+      "required": [
+        "index",
+        "backend",
+        "groupPath",
+        "tagName",
+        "valueType",
+        "value",
+        "occurrence",
+        "fidelity",
+        "known"
+      ]
+    },
+    "TagReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "observationIndex": {
+          "type": "integer"
+        },
+        "backend": {
+          "type": "string"
+        },
+        "qualifiedName": {
+          "type": "string"
+        },
+        "tagId": {
+          "type": "integer"
+        },
+        "occurrence": {
+          "type": "integer"
+        },
+        "streamIndex": {
+          "type": "integer"
+        }
+      }
+    },
+    "FieldCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/TagReference"
+        },
+        "normalizedValue": {
+          "$ref": "#/$defs/NormalizedValue"
+        },
+        "rank": {
+          "type": "integer"
+        },
+        "accepted": {
+          "type": "boolean"
+        },
+        "rejectionReason": {
+          "type": "string"
+        }
+      }
+    },
+    "FieldProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "chosen": {
+          "$ref": "#/$defs/TagReference"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "conflict": {
+          "type": "boolean"
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldCandidate"
+          }
+        }
+      }
+    },
+    "FullMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "$ref": "#/$defs/FileProbe"
+        },
+        "container": {
+          "$ref": "#/$defs/ContainerInfo"
+        },
+        "directories": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DirectoryInfo"
+          }
+        },
+        "streams": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StreamInfo"
+          }
+        },
+        "chapters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ChapterInfo"
+          }
+        },
+        "embeddedImages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EmbeddedImageInfo"
+          }
+        },
+        "observations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RawObservation"
+          }
+        },
+        "fieldProvenance": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/FieldProvenance"
+          }
+        }
+      }
+    },
+    "MetadataDiagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "INFO",
+            "WARNING",
+            "ERROR"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "backend": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        },
+        "causeClass": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "message"
+      ]
+    },
+    "BackendRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "backend": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "USED",
+            "UNAVAILABLE",
+            "SKIPPED",
+            "FAILED",
+            "TIMED_OUT"
+          ]
+        },
+        "version": {
+          "type": "string"
+        },
+        "duration": {
+          "type": "string",
+          "description": "ISO-8601 duration, e.g. PT12.5S"
+        },
+        "observationCount": {
+          "type": "integer"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
