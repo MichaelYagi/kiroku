@@ -43,12 +43,16 @@
 - Panasonic `FirmwareVersion` (0x0002) was decoded as text because it shares its ID with `InteropVersion`. Version
   tags are now matched by name, and non-printable version bytes are kept as numbers.
 - Casio `FirmwareDate` kept only its first NUL-separated part.
+- DNG text tags stored as BYTE (`LocalizedCameraModel`, `OriginalRawFileName`, `ProfileName`, `ProfileCopyright`,
+  calibration signatures) were decoded as lists of numbers instead of text.
 - PostScript fonts (`%!PS-AdobeFont`) were detected as EPS images.
 - `kiroku-json` wrote local times with zero seconds as `HH:mm` (`LocalDateTime.toString()`); seconds are now always written.
 - QuickTime/iTunes item-list and user-data atoms had their readable name as the *display value*; it is now the tag name
   (`QuickTime:ItemList:Lyrics`, ExifTool's names), and the four-character code is the tag ID.
 - QuickTime user-data text with a classic Mac language code was decoded as Latin-1 instead of MacRoman.
 - Ricoh and Sanyo MakerNotes are parsed (8-byte header + IFD), including the PrintIM blocks inside them.
+- DJI MakerNotes (aircraft speed and attitude, gimbal attitude) and Leica type 5 MakerNotes (X1/X2/X Vario: original
+  file name and directory, film mode, white balance levels). CC0 DJI FC220 and Leica X2 samples added to the fetch script.
 - All 76 ExifTool sample files Kiroku reads are now committed fixtures (108 in total), so both oracles check them.
 
 ## 0.1.1 (2026-10-31)

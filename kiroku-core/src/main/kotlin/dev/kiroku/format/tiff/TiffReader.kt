@@ -548,6 +548,10 @@ internal class TiffReader(
 
             TiffType.BYTE, TiffType.SBYTE -> {
                 if (tag == TiffTags.XMP || tag in XP_TAGS) return decodeUndefined(tag, tagName, offset, size, bigEndian)
+                // DNG stores these text tags as BYTE (UTF-8 or ASCII); decode them as text, as ExifTool does.
+                if (tagName in BYTE_TEXT_TAGS && size <= ctx.limits.maxStringLength) {
+                    return NormalizedValue.Text(String(source.read(offset, size.toInt()), Charsets.UTF_8).substringBefore('\u0000').trim())
+                }
                 if (count > MAX_DECODED_COMPONENTS) return NormalizedValue.Binary(size)
                 val b = source.read(offset, size.toInt())
                 NormalizedValue.list(b.map { NormalizedValue.Integer(if (type == TiffType.SBYTE) it.toLong() else (it.toLong() and 0xFF)) })
@@ -636,6 +640,8 @@ internal class TiffReader(
         private const val MAX_CHAIN = 512
         private const val MAX_DECODED_COMPONENTS = 4096
         private val VERSION_TAG_NAMES = setOf("ExifVersion", "FlashpixVersion", "InteropVersion")
+        private val BYTE_TEXT_TAGS =
+            setOf("LocalizedCameraModel", "OriginalRawFileName", "CameraCalibrationSig", "ProfileCalibrationSig", "ProfileName", "ProfileCopyright")
         private val XP_TAGS = setOf(0x9C9B, 0x9C9C, 0x9C9D, 0x9C9E, 0x9C9F)
 
         fun orderOf(bigEndian: Boolean): ByteOrderMark = if (bigEndian) ByteOrderMark.BIG_ENDIAN else ByteOrderMark.LITTLE_ENDIAN

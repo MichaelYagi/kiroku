@@ -946,6 +946,34 @@ internal object MakerNoteTags {
             0x005A to "Apple_0x005a",
         )
 
+    // Leica X1/X2/X Vario MakerNote (only the tags whose meaning is known are named).
+    private val leicaType5 =
+        mapOf(
+            0x0407 to "OriginalFileName",
+            0x0408 to "OriginalDirectory",
+            0x040A to "FocusInfo",
+            0x040D to "ExposureMode",
+            0x0410 to "ShotInfo",
+            0x0412 to "FilmMode",
+            0x0413 to "WB_RGBLevels",
+            0x0500 to "InternalSerialNumber",
+        )
+
+    // DJI drones and gimbal cameras: aircraft speed and attitude, gimbal attitude (degrees, m/s).
+    private val dji =
+        mapOf(
+            0x0001 to "Make",
+            0x0003 to "SpeedX",
+            0x0004 to "SpeedY",
+            0x0005 to "SpeedZ",
+            0x0006 to "Pitch",
+            0x0007 to "Yaw",
+            0x0008 to "Roll",
+            0x0009 to "CameraPitch",
+            0x000A to "CameraYaw",
+            0x000B to "CameraRoll",
+        )
+
     private val ricoh =
         mapOf(
             0x0001 to "MakerNoteType",
@@ -1121,6 +1149,8 @@ internal object MakerNoteTags {
         "Casio" -> casio
         "CasioType1" -> casioType1
         "Ricoh" -> ricoh
+        "LeicaType5" -> leicaType5
+        "DJI" -> dji
         "Sanyo" -> sanyo
         "Sigma" -> sigma
         else -> emptyMap()

@@ -128,6 +128,12 @@ internal class MakerNoteParser(
 
             starts("Panasonic\u0000") -> out += Layout("Panasonic", mn + 12, tiffBase, parentBe)
 
+            // Leica X1/X2/X Vario ("Leica5" in ExifTool, LeicaType5 in metadata-extractor): "LEICA\0\x05\0", then an IFD.
+            starts("LEICA\u0000\u0005\u0000") -> {
+                // Value offsets are relative to the start of the MakerNote.
+                out += Layout("Leica", mn + 8, mn, parentBe, "LeicaType5")
+            }
+
             starts("LEICA\u0000") -> {
                 out += Layout("Leica", mn + 8, tiffBase, parentBe)
                 out += Layout("Leica", mn + 8, mn, parentBe)
@@ -172,6 +178,7 @@ internal class MakerNoteParser(
                 m.startsWith("CASIO") -> "Casio"
                 m.startsWith("KODAK") -> "Kodak"
                 m.startsWith("APPLE") -> "Apple"
+                m.startsWith("DJI") -> "DJI"
                 else -> "Unknown"
             }
         if (out.isEmpty()) {

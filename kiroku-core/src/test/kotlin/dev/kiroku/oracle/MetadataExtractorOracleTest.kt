@@ -92,6 +92,24 @@ class MetadataExtractorOracleTest {
         val items = o.value.asList()
         fun num(i: Int) = items.getOrNull(i)?.asDouble()
         fun close(a: Double?, b: Double) = a != null && (abs(a - b) <= 1e-9 * maxOf(1.0, abs(b)) || a.isNaN() && b.isNaN())
+        // Text that metadata-extractor leaves as bytes (Windows XP tags are UTF-16LE, DNG BYTE text is UTF-8):
+        // Kiroku's text must equal the bytes decoded.
+        val byteText = o.tagId in 0x9C9BL..0x9C9FL ||
+            o.tagName in
+            setOf("LocalizedCameraModel", "OriginalRawFileName", "CameraCalibrationSig", "ProfileCalibrationSig", "ProfileName", "ProfileCopyright")
+        if (byteText && o.value is NormalizedValue.Text) {
+            val raw =
+                when (oracle) {
+                    is IntArray -> oracle.map { it.toByte() }.toByteArray()
+                    is ByteArray -> oracle
+                    is ShortArray -> oracle.map { it.toByte() }.toByteArray()
+                    else -> null
+                }
+            if (raw != null) {
+                val text = (o.value as NormalizedValue.Text).value.trim()
+                return listOf(Charsets.UTF_16LE, Charsets.UTF_8).any { String(raw, it).trimEnd('\u0000').trim() == text }
+            }
+        }
         // Arrays above Kiroku's decode cap are kept as binary; compare the exact original bytes instead.
         if (o.value is NormalizedValue.Binary && o.original?.bytes != null) {
             val bytes = o.original!!.bytes!!.toByteArray().map { it.toInt() and 0xFF }
