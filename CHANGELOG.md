@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 (2026-10-31)
 
 ### Fixed
 - `kiroku-json`: pretty-printed JSON used the platform line separator, so it had CRLF line endings on Windows.

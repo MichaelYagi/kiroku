@@ -75,7 +75,7 @@ API, so Java 17+ and Kotlin 2.0+ applications (for example Spring Boot 3.x) can 
 
 ```bash
 ./gradlew build                      # compile, test, ktlint, all modules
-./gradlew publishToMavenLocal        # dev.kiroku:kiroku-core:0.1.0 etc.
+./gradlew publishToMavenLocal        # dev.kiroku:kiroku-core:0.1.1 etc.
 ./gradlew :kiroku-cli:installDist    # kiroku-cli/build/install/kiroku/bin/kiroku
 scripts/fetch-fixtures.sh            # optional: 61 MB of CC0 RAW samples for the RAW integration tests
 ```
