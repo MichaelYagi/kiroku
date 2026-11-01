@@ -96,8 +96,57 @@ internal object MakerNoteArrays {
             ("Canon" to 0x0093) to ("CanonFileInfo" to canonFileInfo),
         )
 
+    // ---- Sony 0x9050 -------------------------------------------------------------------------------------------
+
+    /** Sony's substitution cipher for 0x9050/0x94xx blocks: a byte b < 249 deciphers to b^55 mod 249. */
+    internal fun sonyDecipher(b: Int): Int {
+        if (b >= 249) return b
+        var r = 1L
+        repeat(55) { r = r * b % 249 }
+        return r.toInt()
+    }
+
+    // The "9050a" layout (ExifTool's name), used by Sony cameras up to about 2015. Later models (9050b/c) store the same
+    // fields at other offsets, so the block is decoded only for models known to use this layout.
+    private val SONY_9050A_MODELS = Regex("^(NEX-|SLT-|ILCA-(68|77M2)$|ILCE-(7|7R|7S|7M2|5000|5100|6000|QX1)$|ILCE-QX)")
+
+    private class ByteField(val offset: Int, val name: String, val size: Int, val count: Int = 1)
+
+    private val sony9050a =
+        listOf(
+            ByteField(0x20, "Shutter", 2, 3), ByteField(0x31, "FlashStatus", 1), ByteField(0x32, "ShutterCount", 4),
+            ByteField(0x3A, "SonyExposureTime", 2), ByteField(0x3C, "SonyFNumber", 2), ByteField(0x3F, "ReleaseMode2", 1),
+            ByteField(0x4C, "ShutterCount2", 4), ByteField(0x7C, "InternalSerialNumber", 1, 4), ByteField(0x105, "LensMount", 1),
+            ByteField(0x106, "LensFormat", 1), ByteField(0x10B, "DistortionCorrParamsPresent", 1), ByteField(0x114, "APS-CSizeCapture", 1),
+        )
+
+    private fun sony9050(ctx: NativeContext, s: ByteSource, entry: IfdEntry, path: String) {
+        val model = ctx.facts["model"] ?: return
+        if (!SONY_9050A_MODELS.containsMatchIn(model)) return
+        val group = listOf("MakerNotes", "SonyTag9050")
+        for (f in sony9050a) {
+            val len = f.size * f.count
+            if (f.offset + len > entry.dataSize) continue
+            val at = entry.dataOffset + f.offset
+            val b = s.read(at, len).map { sonyDecipher(it.toInt() and 0xFF) }
+            // Little-endian values, like the rest of Sony's MakerNote data.
+            val values = (0 until f.count).map { i -> (0 until f.size).fold(0L) { acc, k -> acc or (b[i * f.size + k].toLong() shl (8 * k)) } }
+            ctx.observe(
+                group,
+                f.name,
+                NormalizedValue.list(values.map { NormalizedValue.Integer(it) }),
+                tagId = f.offset.toLong(),
+                // The original bytes are the enciphered bytes on disk; the value is their deciphered form.
+                original = ctx.original(s, at, len.toLong()),
+                nativeType = NativeType(TypeSystem.TIFF, "enciphered int${f.size * 8}u", null, f.count.toLong()),
+                sourcePath = "$path/SonyTag9050",
+            )
+        }
+    }
+
     fun decode(ctx: NativeContext, s: ByteSource, vendor: String, entry: IfdEntry, bigEndian: Boolean, path: String) {
         if (!entry.inBounds || entry.dataSize < 2) return
+        if (vendor == "Sony" && entry.tag == 0x9050) return sony9050(ctx, s, entry, path)
         val (name, t) = tables[vendor to entry.tag] ?: return
         val group = listOf("MakerNotes", name)
         val order = TiffReader.orderOf(bigEndian)

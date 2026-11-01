@@ -309,6 +309,7 @@ internal class TiffReader(
             entries.firstOrNull { it.tag == TiffTags.MAKE }?.value?.let { make = (it as? NormalizedValue.Text)?.value?.trim() }
             entries.firstOrNull { it.tag == TiffTags.MODEL }?.value?.let { model = (it as? NormalizedValue.Text)?.value?.trim() }
             make?.let { ctx.facts.putIfAbsent("make", it) }
+            model?.let { ctx.facts.putIfAbsent("model", it) }
             if (entries.any { it.tag == TiffTags.DNG_VERSION }) dng = true
         }
 

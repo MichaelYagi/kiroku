@@ -397,6 +397,10 @@ class AcceptanceTest {
             assertEquals(4L, canon.find("MakerNotes:CanonCameraSettings:Quality").single().value.asLong())
             assertEquals(75L, canon.find("MakerNotes:CanonCameraSettings:MaxFocalLength").single().value.asLong())
             assertTrue(canon.find("MakerNotes:CanonShotInfo:BaseISO").isNotEmpty())
+            // Sony 0x9050 (layout "9050a"), deciphered; values from ExifTool's deciphered dump of the ILCE-7S.
+            val sony = x(Fixtures.ext("sony_ilce7s.arw")).full
+            assertEquals(16702L, sony.find("MakerNotes:SonyTag9050:ShutterCount").single().value.asLong())
+            assertEquals(listOf(232L, 254L, 3L, 11L), sony.find("MakerNotes:SonyTag9050:InternalSerialNumber").single().value.asList().map { it.asLong() })
             // Panasonic FirmwareVersion (0x0002) shares its ID with InteropVersion but is four binary bytes.
             assertEquals(listOf(0L, 1L, 0L, 8L), mn("FirmwareVersion", "Panasonic.jpg").single().value.asList().map { it.asLong() })
             assertEquals("0100", x(Fixtures.et("Panasonic.jpg")).full.find("EXIF:InteropIFD:InteropVersion").single().value.asText())

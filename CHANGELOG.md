@@ -20,6 +20,8 @@
   `CanonFocalLength`, `CanonPanorama`, `CanonFileInfo`, `CanonAFInfo`, `CanonAFInfo2`): each element keeps its index as
   tag ID, its native type and its original bytes. Verified element by element against ExifTool with
   `scripts/check-makernote-arrays.py`; model-dependent elements are left unnamed.
+- Sony MakerNote 0x9050 deciphered (group `MakerNotes:SonyTag9050`: shutter count, internal serial number, lens mount
+  and format, exposure fields) for models using ExifTool's "9050a" layout; other models are not guessed at.
 - **GeoTIFF** keys (group `GeoTiff`): version, model and raster type, geographic/projected CS, datum, ellipsoid,
   projection parameters, from the key directory and its double and ASCII parameter tags. The GeoTIFF TIFF tags
   (PixelScale, ModelTiePoint, ModelTransform) are now named.
