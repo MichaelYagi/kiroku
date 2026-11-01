@@ -27,6 +27,7 @@ import javax.xml.parsers.DocumentBuilderFactory
 internal object XmpParser {
     const val RDF = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     private const val XML_NS = "http://www.w3.org/XML/1998/namespace"
+    private const val ADOBE_META = "adobe:ns:meta/"
 
     /** Canonical prefixes by namespace URI, so prefixes chosen by the document don't affect group names. */
     val prefixes: Map<String, String> =
@@ -115,7 +116,34 @@ internal object XmpParser {
                 ctx.warn(DiagnosticCode.MALFORMED, "XMP packet is not well-formed XML: ${e.javaClass.simpleName}", e)
                 return
             }
+        // The toolkit that wrote the packet (x:xmpmeta/@x:xmptk) and the resource it describes (rdf:about), as ExifTool reports them.
+        // Toolkits before XMP 3 wrote x:xapmeta/@x:xaptk and an un-prefixed `about` attribute.
+        val meta = (doc.getElementsByTagNameNS(ADOBE_META, "xmpmeta").item(0) ?: doc.getElementsByTagNameNS(ADOBE_META, "xapmeta").item(0)) as? Element
+        meta?.let { m -> m.getAttributeNS(ADOBE_META, "xmptk").ifEmpty { m.getAttributeNS(ADOBE_META, "xaptk") } }?.takeIf { it.isNotEmpty() }?.let {
+            ctx.observe(
+                listOf("XMP", "XMP-x"),
+                "XMPToolkit",
+                NormalizedValue.Text(ctx.clip(it)),
+                namespace = ADOBE_META,
+                nativeType = NativeType(TypeSystem.XMP, "text"),
+                sourcePath = "$path/x:xmptk",
+            )
+        }
         val descriptions = doc.getElementsByTagNameNS(RDF, "Description")
+        (0 until descriptions.length).asSequence()
+            .map { descriptions.item(it) as Element }
+            .map { it to it.getAttributeNS(RDF, "about").ifEmpty { it.getAttribute("about") } }
+            .firstOrNull { (d, about) -> d.parentNode?.localName == "RDF" && about.isNotEmpty() }
+            ?.let { (_, about) ->
+                ctx.observe(
+                    listOf("XMP", "XMP-rdf"),
+                    "About",
+                    NormalizedValue.Text(ctx.clip(about)),
+                    namespace = RDF,
+                    nativeType = NativeType(TypeSystem.XMP, "text"),
+                    sourcePath = "$path/rdf:about",
+                )
+            }
         var count = 0
         for (i in 0 until descriptions.length) {
             val d = descriptions.item(i) as Element

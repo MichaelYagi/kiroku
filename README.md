@@ -50,6 +50,10 @@ ExifTool **and** metadata-extractor in tests.
 | WebM / Matroska | video | EBML header, Info, Tracks (incl. Colour), Tags, Chapters, Attachments | generated, ExifTool sample |
 | HEVC (raw `.hevc`) | video elementary stream | VPS/SPS/VUI (profile, tier, level, size, bit depth, chroma, colour, SAR, timing), SEI encoder string | generated |
 | WAV / RF64 | audio | fmt (incl. extensible), fact, data size and duration, LIST/INFO, BWF `bext`, iXML, XMP | generated, ExifTool sample |
+| MP3 | audio | ID3v2.2/2.3/2.4 frames (text, comments, lyrics, pictures, user text/URLs), ID3v1/1.1, MPEG frame header, Xing/Info/VBRI duration | generated (ID3v2.4 VBR, bare CBR), ExifTool sample |
+| PSD / PSB | image | header, layer count, compression, image resources (IPTC, XMP, ICC, EXIF, resolution, slices, version info, thumbnail) | ExifTool sample |
+| EPS / PostScript | image | DSC header comments, `%ImageData`, hex Photoshop IRB (IPTC) and ICC blocks, XMP, DOS EPS TIFF/WMF previews | ExifTool sample |
+| ICO / CUR, PCX | image | icon directory (sizes, depth, hotspots, BMP/PNG entries); PCX header | ExifTool samples |
 
 Limitations are listed per format in [`docs/CAPABILITIES.md`](docs/CAPABILITIES.md) and at runtime through
 `extractor.capabilities()`.

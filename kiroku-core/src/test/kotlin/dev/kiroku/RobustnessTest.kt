@@ -27,7 +27,8 @@ class RobustnessTest {
     private val structural =
         listOf(
             "jpeg_full_exif.jpg", "png_xmp_text.png", "gif_animated.gif", "webp_exif_xmp.webp", "tiff_basic.tif", "bmp_plain.bmp",
-            "video_iphone_style.mov", "video_basic.avi", "video_basic.webm", "video_raw.hevc", "audio_bwf.wav",
+            "video_iphone_style.mov", "video_basic.avi", "video_basic.webm", "video_raw.hevc", "audio_bwf.wav", "audio_id3v24.mp3",
+            "audio_bare.mp3",
         ).map { Fixtures.gen(it) } +
             listOf(
                 "Nikon.nef",
@@ -38,6 +39,11 @@ class RobustnessTest {
                 "Canon.jpg",
                 "Apple.jpg",
                 "Matroska.mkv",
+                "Photoshop.psd",
+                "PostScript.eps",
+                "ICO.ico",
+                "PCX.pcx",
+                "MP3.mp3",
             ).map {
                 Fixtures.et(it)
             }

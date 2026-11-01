@@ -127,4 +127,10 @@ cp "$TMP/base.png" false_extension_png.jpg
 head -c 600 jpeg_full_exif.jpg > truncated.jpg
 printf 'NOT A REAL MEDIA FILE\n' > corrupt_header.mp4
 
+# 21. MP3 (VBR, Xing header) with ID3v2.4 tags, and a bare CBR MPEG stream without ID3 or Xing (signature-only
+#     detection, estimated duration).
+"${FF[@]}" "${src_audio[@]}" -c:a libmp3lame -q:a 4 -id3v2_version 4 -metadata title="MP3 Title" -metadata artist="MP3 Artist" \
+  -metadata album="MP3 Album" -metadata date=2021 -metadata comment="MP3 comment" audio_id3v24.mp3
+"${FF[@]}" "${src_audio[@]}" -c:a libmp3lame -b:a 128k -write_xing 0 -id3v2_version 0 -fflags +bitexact -f mp3 audio_bare.mp3
+
 echo "Generated fixtures in $OUT"

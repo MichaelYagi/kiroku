@@ -6,10 +6,14 @@ import dev.kiroku.format.tiff.TiffReader
 import dev.kiroku.format.xmp.XmpParser
 import dev.kiroku.io.ByteSource
 import dev.kiroku.io.Bytes
+import dev.kiroku.model.ByteOrderMark
 import dev.kiroku.model.DiagnosticCode
 import dev.kiroku.model.DirectoryKind
+import dev.kiroku.model.EmbeddedImageInfo
+import dev.kiroku.model.EmbeddedImageKind
 import dev.kiroku.model.NativeType
 import dev.kiroku.model.NormalizedValue
+import dev.kiroku.model.Severity
 import dev.kiroku.model.TypeSystem
 
 /**
@@ -143,7 +147,7 @@ internal object PhotoshopParser {
             0x0416 to "IndexedColorTableCount", 0x0417 to "TransparentIndex", 0x0419 to "GlobalAltitude",
             0x041A to "SliceInfo", 0x041B to "WorkflowURL", 0x041C to "JumpToXPEP", 0x041D to "AlphaIdentifiers",
             0x041E to "URL_List", 0x0421 to "VersionInfo", 0x0422 to "EXIFInfo", 0x0423 to "ExifInfo2",
-            0x0424 to "XMP", 0x0425 to "IPTCDigest", 0x0426 to "PrintScale", 0x0428 to "PixelInfo",
+            0x0424 to "XMP", 0x0425 to "IPTCDigest", 0x0426 to "PrintScaleInfo", 0x0428 to "PixelInfo",
             0x0429 to "LayerComps", 0x042A to "AlternateDuotoneColors", 0x042B to "AlternateSpotColors",
             0x042D to "LayerSelectionIDs", 0x042E to "HDRToningInfo", 0x042F to "PrintInfo",
             0x0430 to "LayerGroupsEnabledID", 0x0431 to "ColorSamplersResource", 0x0432 to "MeasurementScale",
@@ -177,22 +181,26 @@ internal object PhotoshopParser {
             }
             val subPath = "$path/8BIM[$index]"
             val name = names[id] ?: if (id in 0x07D0..0x0BB6) "PathInfo" else null
-            ctx.observe(
-                groupPath = listOf("Photoshop", "Photoshop"),
-                tagName = name ?: "0x%04X".format(id),
-                value = if (id == 0x0425 &&
-                    size == 16L
-                ) {
-                    NormalizedValue.Text(source.read(dataStart, 16).joinToString("") { "%02x".format(it) })
-                } else {
-                    NormalizedValue.Binary(size)
-                },
-                tagId = id.toLong(),
-                original = ctx.original(source, dataStart, size),
-                nativeType = NativeType(TypeSystem.JPEG, "8BIM", null, size),
-                known = name != null,
-                sourcePath = subPath,
-            )
+            // A resource that holds one value is reported once, decoded, with the whole resource as its original bytes.
+            val singleValue = id in SINGLE_VALUE && size >= (if (id == 0x040A || id == 0x040B) 1 else 4)
+            if (!singleValue) {
+                ctx.observe(
+                    groupPath = listOf("Photoshop", "Photoshop"),
+                    tagName = name ?: "0x%04X".format(id),
+                    value = if (id == 0x0425 &&
+                        size == 16L
+                    ) {
+                        NormalizedValue.Text(source.read(dataStart, 16).joinToString("") { "%02x".format(it) })
+                    } else {
+                        NormalizedValue.Binary(size)
+                    },
+                    tagId = id.toLong(),
+                    original = ctx.original(source, dataStart, size),
+                    nativeType = NativeType(TypeSystem.JPEG, "8BIM", null, size),
+                    known = name != null,
+                    sourcePath = subPath,
+                )
+            }
             when (id) {
                 0x0404 -> IptcParser.parse(ctx, source, dataStart, size, "$subPath/IPTC")
 
@@ -206,9 +214,137 @@ internal object PhotoshopParser {
                         val skip = if (Bytes.startsWith(slice.readAtMost(0, 6), Bytes.ascii("Exif\u0000\u0000"))) 6L else 0L
                         TiffReader(ctx, slice.slice(skip, size - skip), "$subPath/TIFF").parse()
                     }
+
+                else -> try {
+                    decodeResource(ctx, source, id, dataStart, size, subPath)
+                } catch (e: IndexOutOfBoundsException) {
+                    ctx.warn(DiagnosticCode.MALFORMED, "Photoshop resource 0x%04X is shorter than its layout".format(id), e, Severity.INFO)
+                }
             }
             pos = dataStart + size + (size and 1)
             index++
         }
+    }
+
+    /**
+     * Decodes the common fixed-layout resources into named values (names as ExifTool uses them). The resource itself
+     * stays in the output as a byte-exact blob; each decoded value points at its own bytes.
+     */
+    private fun decodeResource(ctx: NativeContext, s: ByteSource, id: Int, d: Long, size: Long, path: String) {
+        val g = listOf("Photoshop", "Photoshop")
+        fun o(name: String, v: NormalizedValue, off: Long, n: Long, type: String, display: String? = null) = ctx.observe(
+            g,
+            name,
+            v,
+            tagId = id.toLong(),
+            original = ctx.original(s, d + off, n, ByteOrderMark.BIG_ENDIAN),
+            nativeType = NativeType(TypeSystem.PSD, type, null, 1),
+            displayValue = display,
+            sourcePath = path,
+        )
+        fun int(name: String, off: Long, n: Int, display: (Long) -> String? = { null }) {
+            if (off + n > size) return
+            val v = when (n) {
+                1 -> s.u8(d + off).toLong()
+                2 -> s.u16(d + off, true).toLong()
+                else -> s.u32(d + off, true)
+            }
+            o(name, NormalizedValue.Integer(v), off, n.toLong(), "int${n * 8}u", display(v))
+        }
+        fun unicode(off: Long): Pair<String, Long>? {
+            if (off + 4 > size) return null
+            val chars = s.u32(d + off, true)
+            if (chars > 4096 || off + 4 + chars * 2 > size) return null
+            return String(s.read(d + off + 4, (chars * 2).toInt()), Charsets.UTF_16BE).trimEnd('\u0000') to off + 4 + chars * 2
+        }
+        when (id) {
+            0x03ED -> if (size >= 16) {
+                o("XResolution", NormalizedValue.Decimal(s.u32(d, true) / 65536.0), 0, 4, "fixed32u")
+                int("DisplayedUnitsX", 4, 2) { unitName(it) }
+                o("YResolution", NormalizedValue.Decimal(s.u32(d + 8, true) / 65536.0), 8, 4, "fixed32u")
+                int("DisplayedUnitsY", 12, 2) { unitName(it) }
+            }
+
+            0x0406 -> if (size >= 6) {
+                // ExifTool reports the stored quality plus 4 (Photoshop's 0-12 scale).
+                o("PhotoshopQuality", NormalizedValue.Integer(s.u16(d, true).toShort() + 4L), 0, 2, "int16s")
+                int("PhotoshopFormat", 2, 2) {
+                    if (it == 0L) {
+                        "Standard"
+                    } else if (it == 1L) {
+                        "Optimized"
+                    } else if (it == 0x101L) {
+                        "Progressive"
+                    } else {
+                        null
+                    }
+                }
+                int("ProgressiveScans", 4, 2)
+            }
+
+            0x040A -> int("CopyrightFlag", 0, 1) { if (it == 0L) "False" else "True" }
+
+            0x040B -> o("URL", NormalizedValue.Text(String(s.read(d, minOf(size, 65_536).toInt()), Charsets.UTF_8).trimEnd('\u0000')), 0, size, "string")
+
+            0x040C -> thumbnail(ctx, s, d, size, g, path)
+
+            0x040D -> int("GlobalAngle", 0, 4)
+
+            0x0419 -> int("GlobalAltitude", 0, 4)
+
+            0x041A -> if (size >= 28 && s.u32(d, true) == 6L) {
+                // Version 6: bounding rectangle (4 x int32), group name, slice count.
+                unicode(20)?.let { (name, after) ->
+                    o("SlicesGroupName", NormalizedValue.Text(name), 24, after - 24, "unicode")
+                    int("NumSlices", after, 4)
+                }
+            }
+
+            0x041E -> int("URL_ListCount", 0, 4)
+
+            0x0421 -> if (size >= 13) {
+                int("HasRealMergedData", 4, 1) { if (it == 0L) "No" else "Yes" }
+                unicode(5)?.let { (writer, after) ->
+                    o("WriterName", NormalizedValue.Text(writer), 9, after - 9, "unicode")
+                    unicode(after)?.let { (reader, _) -> o("ReaderName", NormalizedValue.Text(reader), after + 4, reader.length * 2L, "unicode") }
+                }
+            }
+
+            0x0426 -> if (size >= 14) {
+                int("PrintStyle", 0, 2) { arrayOf("Centered", "Size to Fit", "User Defined").getOrNull(it.toInt()) }
+                val x = java.lang.Float.intBitsToFloat(s.u32(d + 2, true).toInt())
+                val y = java.lang.Float.intBitsToFloat(s.u32(d + 6, true).toInt())
+                o("PrintPosition", NormalizedValue.list(listOf(NormalizedValue.Decimal(x.toDouble()), NormalizedValue.Decimal(y.toDouble()))), 2, 8, "float[2]")
+                o("PrintScale", NormalizedValue.Decimal(java.lang.Float.intBitsToFloat(s.u32(d + 10, true).toInt()).toDouble()), 10, 4, "float")
+            }
+
+            0x0428 -> if (size >= 12) {
+                o("PixelAspectRatio", NormalizedValue.Decimal(java.lang.Double.longBitsToDouble(s.u64(d + 4, true))), 4, 8, "double")
+            }
+
+            0x0BB7 -> if (size >= 1 && 1 + s.u8(d) <= size) {
+                val n = s.u8(d)
+                o("ClippingPathName", NormalizedValue.Text(String(s.read(d + 1, n), Charsets.ISO_8859_1)), 1, n.toLong(), "pstring")
+            }
+        }
+    }
+
+    private val SINGLE_VALUE = setOf(0x040A, 0x040B, 0x040D, 0x0419)
+
+    private fun unitName(v: Long): String? = when (v) {
+        1L -> "inches"
+        2L -> "cm"
+        else -> null
+    }
+
+    /** `PhotoshopThumbnail`: a 28-byte header (format 1 = JPEG, width, height ...), then the JPEG data. */
+    private fun thumbnail(ctx: NativeContext, s: ByteSource, d: Long, size: Long, g: List<String>, path: String) {
+        if (size < 32 || s.u32(d, true) != 1L || s.u16(d + 28, true) != 0xFFD8) return
+        ctx.collector.embeddedImage(
+            EmbeddedImageInfo(
+                0, "", EmbeddedImageKind.THUMBNAIL, g, width = s.u32(d + 4, true).toInt(), height = s.u32(d + 8, true).toInt(),
+                compression = "JPEG", mimeType = "image/jpeg", fileOffset = s.absolute(d + 28), length = size - 28,
+            ),
+        )
     }
 }

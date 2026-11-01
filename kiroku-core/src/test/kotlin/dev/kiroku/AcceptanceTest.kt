@@ -8,6 +8,7 @@ import dev.kiroku.model.MediaKind
 import dev.kiroku.model.Rational
 import dev.kiroku.model.StreamKind
 import dev.kiroku.model.asLong
+import dev.kiroku.model.asText
 import dev.kiroku.testing.Fixtures
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -122,6 +123,73 @@ class AcceptanceTest {
 
     @Nested
     inner class Images {
+        @Test
+        fun `PSD, EPS, ICO and PCX are read with ExifTool's values`() {
+            // Expected values from ExifTool 13.60 on its own test images.
+            val psd = x(Fixtures.et("Photoshop.psd"))
+            assertEquals(ExtractionStatus.COMPLETE, psd.status)
+            assertEquals(MediaFormat.PSD.id, psd.gallery.format)
+            assertEquals(8 to 8, psd.gallery.dimensions!!.storedWidth to psd.gallery.dimensions!!.storedHeight)
+            assertEquals("Test Picture", psd.gallery.description!!.title)
+            val expected =
+                listOf(
+                    "ColorMode" to 3L,
+                    "LayerCount" to 0L,
+                    "Compression" to 1L,
+                    "GlobalAngle" to 120L,
+                    "GlobalAltitude" to 30L,
+                    "NumSlices" to 1L,
+                    "HasRealMergedData" to 1L,
+                    "DisplayedUnitsX" to 1L,
+                )
+            for ((tag, value) in expected) {
+                assertEquals(value, psd.full.find("Photoshop:Photoshop:$tag").single().value.asLong(), tag)
+            }
+            assertEquals("Adobe Photoshop 7.0", psd.full.find("Photoshop:Photoshop:ReaderName").single().value.asText())
+            assertEquals("XMP toolkit 2.8.2-33, framework 1.5", psd.full.find("XMP:XMP-x:XMPToolkit").single().value.asText())
+
+            val eps = x(Fixtures.et("PostScript.eps"))
+            assertEquals(ExtractionStatus.COMPLETE, eps.status)
+            assertEquals(MediaFormat.EPS.id, eps.gallery.format)
+            // The outer document only: embedded %%BeginDocument documents have other creators.
+            assertEquals("Adobe Photoshop Version 7.0.1", eps.full.find("PostScript:PostScript:Creator").single().value.asText())
+            assertEquals("0 0 8 8", eps.full.find("PostScript:PostScript:BoundingBox").single().value.asText())
+            assertEquals(8 to 8, eps.gallery.dimensions!!.storedWidth to eps.gallery.dimensions!!.storedHeight)
+            assertEquals("Phil Harvey", eps.full.find("IPTC:IPTC:By-line").first().value.asText(), "IPTC from the hex %BeginPhotoshop block")
+            assertEquals(3, eps.full.find("IPTC:IPTC:Keywords").size)
+
+            val ico = x(Fixtures.et("ICO.ico"))
+            assertEquals(MediaFormat.ICO.id, ico.gallery.format)
+            assertEquals(1L, ico.full.find("File:File:BitsPerPixel").single().value.asLong())
+            val pcx = x(Fixtures.et("PCX.pcx"))
+            assertEquals(MediaFormat.PCX.id, pcx.gallery.format)
+            assertEquals(8 to 8, pcx.gallery.dimensions!!.storedWidth to pcx.gallery.dimensions!!.storedHeight)
+            assertEquals(3L, pcx.full.find("File:File:ColorPlanes").single().value.asLong())
+        }
+
+        @Test
+        fun `MP3 with ID3v2_2, ID3v2_4 and without tags`() {
+            val et = x(Fixtures.et("MP3.mp3"))
+            assertEquals(MediaKind.AUDIO, et.gallery.mediaKind)
+            assertEquals("ExifTool Test", et.gallery.description!!.title)
+            assertEquals("Phil's Greatest Hits", et.gallery.description!!.album)
+            assertEquals("Title", et.full.find("ID3:ID3v1:Title").single().value.asText())
+            assertEquals(391L, et.full.find("File:File:ID3Size").single().value.asLong(), "v2 and v1 tags together, as ExifTool")
+
+            val v24 = x(Fixtures.gen("audio_id3v24.mp3"))
+            assertEquals("MP3 Artist", v24.gallery.description!!.artist)
+            assertEquals("MP3 comment", v24.gallery.description!!.comment, "TXXX:comment is named Comment, as ExifTool")
+            assertEquals("mp3", v24.gallery.audio!!.codec)
+            assertEquals(48000, v24.gallery.audio!!.sampleRateHz)
+            assertEquals(1, v24.gallery.audio!!.channels)
+            assertTrue(v24.diagnostics.none { it.code == DiagnosticCode.ESTIMATED_VALUE }, "the Xing frame count gives an exact duration")
+
+            val bare = x(Fixtures.gen("audio_bare.mp3"))
+            assertEquals(MediaFormat.MP3.id, bare.gallery.format, "detected from two consecutive MPEG frames")
+            assertTrue(bare.diagnostics.any { it.code == DiagnosticCode.ESTIMATED_VALUE })
+            assertEquals(1.03, bare.gallery.audio!!.duration!!.toMillis() / 1000.0, 0.01)
+        }
+
         @Test
         fun `scenario 1 - JPEG with full EXIF`() {
             val g = x(Fixtures.gen("jpeg_full_exif.jpg")).gallery

@@ -37,7 +37,7 @@ class MetadataExtractorOracleTest {
     fun `EXIF tag IDs and values agree with metadata-extractor`(): List<DynamicTest> = Fixtures.all()
         .filter {
             it.extension.lowercase() in
-                setOf("jpg", "jpeg", "tif", "tiff", "nef", "cr2", "cr3", "raf", "dng", "orf", "arw", "rw2", "rwl", "srw", "png", "webp", "heic")
+                setOf("jpg", "jpeg", "tif", "tiff", "nef", "cr2", "cr3", "raf", "dng", "orf", "arw", "rw2", "rwl", "srw", "png", "webp", "heic", "psd")
         }
         .map { f -> DynamicTest.dynamicTest(f.name) { compare(f) } }
 

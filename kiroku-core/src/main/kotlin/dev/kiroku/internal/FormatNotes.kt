@@ -37,6 +37,14 @@ internal object FormatNotes {
 
         MediaFormat.RAF -> setOf("RAF", "JPEG", "EXIF", "GPS", "MakerNotes", "RAW")
 
+        MediaFormat.PSD -> setOf("Photoshop", "IPTC", "XMP", "ICC_Profile", "EXIF")
+
+        MediaFormat.EPS -> setOf("PostScript", "Photoshop", "IPTC", "XMP", "ICC_Profile")
+
+        MediaFormat.ICO, MediaFormat.PCX -> setOf("File")
+
+        MediaFormat.MP3 -> setOf("ID3", "MPEG", "Streams")
+
         MediaFormat.MP4, MediaFormat.MOV, MediaFormat.M4A, MediaFormat.THREE_GP -> setOf(
             "QuickTime",
             "ISOBMFF",
@@ -84,6 +92,22 @@ internal object FormatNotes {
             listOf(
                 "Camera metadata comes from the EXIF of the embedded full-size JPEG, as in the camera's own files.",
                 "Only the RAF directory tags named by ExifTool get names; the rest keep numeric IDs. Raw pixel data is not decoded.",
+            )
+
+        MediaFormat.PSD -> listOf("Layers and pixel data are not decoded; only the layer count and image compression are read.")
+
+        MediaFormat.EPS ->
+            listOf(
+                "Only the first 8 MiB of the PostScript are scanned. Hex-encoded Photoshop and ICC blocks are decoded, so they are reconstructed, not byte-exact.",
+                "Documents embedded with %%BeginDocument are skipped, as ExifTool does.",
+            )
+
+        MediaFormat.ICO, MediaFormat.PCX -> listOf("No camera, capture-time or GPS metadata in this format.")
+
+        MediaFormat.MP3 ->
+            listOf(
+                "Without a Xing/Info or VBRI header, the duration is estimated from the bit rate (ESTIMATED_VALUE diagnostic).",
+                "Values from unsynchronised ID3 tags are reconstructed, not byte-exact. Encrypted or compressed ID3 frames are kept as raw bytes.",
             )
 
         MediaFormat.MP4, MediaFormat.MOV, MediaFormat.THREE_GP ->

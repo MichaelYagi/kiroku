@@ -26,6 +26,11 @@ the native parser decodes. The "Tested" column says how each row is verified. At
 | .avi | AVI → VIDEO | avih, strh/strf (BITMAPINFO/WAVEFORMATEX), strn, strd EXIF, IDIT, ISMP, LIST INFO | generated + 2 ExifTool samples | ffprobe | Camera metadata is rare. |
 | .webm | WEBM / MATROSKA → VIDEO | EBML header, Info (duration, DateUTC, apps), Tracks (video incl. Colour, audio), Tags, Chapters, Attachments | generated + ExifTool sample (.mkv) | ffprobe | Unknown-size clusters end the scan. Camera tags are rare. |
 | .hevc | HEVC (Annex-B) → VIDEO | VPS/SPS: profile, tier, level, coded and cropped size, chroma, bit depth, VUI SAR/colour/timing, SEI user-data encoder string | generated | ffprobe | No container, so no duration, time, device or GPS. `video.container` is null. |
+| .mp3 | MP3 → AUDIO | ID3v2.2/2.3/2.4 (all text encodings, unsynchronisation, extended header), ID3v1/1.1, first MPEG frame header, Xing/Info/VBRI frame count | generated (ID3v2.4 + Xing, bare CBR) + ExifTool sample | ExifTool, ffprobe | Without Xing/VBRI the duration is estimated (`ESTIMATED_VALUE`). Unsynchronised tags and decoded frames are reconstructed, not byte-exact. |
+| .psd .psb | PSD → IMAGE | header (channels, size, depth, colour mode), image resources incl. IPTC, XMP, ICC, EXIF, resolution, print scale, slices, version info, thumbnail; layer count; image compression | ExifTool sample | ExifTool | Layers and pixels are not decoded. |
+| .eps .ps | EPS → IMAGE | DSC header up to `%%EndComments`, `%ImageData`, `%BeginPhotoshop` (IRB → IPTC), `%%BeginICCProfile`, XMP packet, DOS EPS header with TIFF/WMF previews | ExifTool sample | ExifTool | First 8 MiB scanned. Embedded `%%BeginDocument` documents are skipped. Hex blocks are reconstructed. |
+| .ico .cur | ICO → IMAGE | directory: image count, sizes, colours, planes/depth or cursor hotspot, BMP/PNG entries listed | ExifTool sample | — | No camera, time or GPS fields. |
+| .pcx | PCX → IMAGE | 128-byte header (version, encoding, depth, window, resolution, planes) | ExifTool sample | — | No camera, time or GPS fields. |
 | .wav | WAV (RF64/BW64) → AUDIO | fmt (incl. extensible), fact, data size and duration, LIST INFO, BWF bext, iXML, _PMX XMP, ds64 | generated (BWF) + ExifTool sample | ffprobe | No video or camera fields. |
 
 ## Status per backend

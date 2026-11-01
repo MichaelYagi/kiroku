@@ -30,6 +30,11 @@ public enum class MediaFormat(public val id: String, public val mimeType: String
     PEF("PEF", "image/x-pentax-pef", MediaKind.RAW_IMAGE, setOf("pef")),
     CR3("CR3", "image/x-canon-cr3", MediaKind.RAW_IMAGE, setOf("cr3")),
     RAF("RAF", "image/x-fujifilm-raf", MediaKind.RAW_IMAGE, setOf("raf")),
+    PSD("PSD", "image/vnd.adobe.photoshop", MediaKind.IMAGE, setOf("psd", "psb")),
+    EPS("EPS", "application/postscript", MediaKind.IMAGE, setOf("eps", "epsf", "ps")),
+    ICO("ICO", "image/x-icon", MediaKind.IMAGE, setOf("ico", "cur")),
+    PCX("PCX", "image/pcx", MediaKind.IMAGE, setOf("pcx")),
+    MP3("MP3", "audio/mpeg", MediaKind.AUDIO, setOf("mp3")),
 
     /** A TIFF-structured RAW file whose vendor subtype could not be identified. */
     TIFF_RAW("TIFF_RAW", "image/tiff", MediaKind.RAW_IMAGE, setOf("tif", "tiff")),

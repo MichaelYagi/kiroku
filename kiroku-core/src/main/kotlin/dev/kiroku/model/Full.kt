@@ -233,6 +233,9 @@ public enum class DiagnosticCode {
     TIMEZONE_UNKNOWN,
     CAPTURE_TIME_FROM_FILESYSTEM,
     PRIMARY_STREAM_SELECTED,
+
+    /** A value was estimated rather than read (for example an MP3 duration from the bit rate). */
+    ESTIMATED_VALUE,
     CANCELLED,
     INTERNAL_ERROR,
 }

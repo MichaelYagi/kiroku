@@ -7,11 +7,16 @@ import dev.kiroku.format.LimitExceededException
 import dev.kiroku.format.NativeContext
 import dev.kiroku.format.bmp.BmpParser
 import dev.kiroku.format.ebml.MatroskaParser
+import dev.kiroku.format.eps.EpsParser
 import dev.kiroku.format.gif.GifParser
 import dev.kiroku.format.hevc.HevcParser
+import dev.kiroku.format.ico.IcoParser
 import dev.kiroku.format.isobmff.IsoBmffParser
 import dev.kiroku.format.jpeg.JpegParser
+import dev.kiroku.format.mp3.Mp3Parser
+import dev.kiroku.format.pcx.PcxParser
 import dev.kiroku.format.png.PngParser
+import dev.kiroku.format.psd.PsdParser
 import dev.kiroku.format.raf.RafParser
 import dev.kiroku.format.riff.RiffParser
 import dev.kiroku.format.tiff.TiffReader
@@ -35,7 +40,8 @@ internal class NativeBackend : MetadataBackend {
     override val metadataFamilies: Set<String> =
         setOf(
             "EXIF", "TIFF", "GPS", "Interop", "MakerNotes", "XMP", "IPTC", "Photoshop", "ICC_Profile", "JFIF", "MPF",
-            "PNG", "GIF", "BMP", "RIFF", "WebP", "AVI", "WAV", "BWF", "iXML", "QuickTime", "ISOBMFF", "HEIF", "Matroska", "H265", "RAF",
+            "PNG", "GIF", "BMP", "RIFF", "WebP", "AVI", "WAV", "BWF", "iXML",
+            "QuickTime", "ISOBMFF", "HEIF", "Matroska", "H265", "RAF", "PostScript", "ID3", "MPEG", "File",
         )
 
     override fun mode(config: MetadataConfig): BackendMode = BackendMode.ALWAYS
@@ -68,6 +74,16 @@ internal class NativeBackend : MetadataBackend {
                     -> IsoBmffParser(ctx, src, context.probe.detectedFormat).parse()
 
                     MediaFormat.RAF -> RafParser.parse(ctx, src)
+
+                    MediaFormat.PSD -> PsdParser.parse(ctx, src)
+
+                    MediaFormat.EPS -> EpsParser.parse(ctx, src)
+
+                    MediaFormat.ICO -> IcoParser.parse(ctx, src)
+
+                    MediaFormat.PCX -> PcxParser.parse(ctx, src)
+
+                    MediaFormat.MP3 -> Mp3Parser.parse(ctx, src)
 
                     MediaFormat.WEBM, MediaFormat.MATROSKA -> MatroskaParser(ctx, src, context.probe.detectedFormat.id).parse()
 

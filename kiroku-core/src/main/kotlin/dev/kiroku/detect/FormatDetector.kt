@@ -1,5 +1,9 @@
 package dev.kiroku.detect
 
+import dev.kiroku.format.eps.EpsParser
+import dev.kiroku.format.ico.IcoParser
+import dev.kiroku.format.mp3.Mp3Parser
+import dev.kiroku.format.pcx.PcxParser
 import dev.kiroku.format.tiff.TiffReader
 import dev.kiroku.format.tiff.TiffTags
 import dev.kiroku.format.tiff.TiffType
@@ -52,6 +56,12 @@ internal object FormatDetector {
 
             h.size >= 16 && at(0, "FUJIFILMCCD-RAW ") -> image(MediaFormat.RAF)
 
+            at(0, "8BPS") && h.size >= 6 && (h[5].toInt() == 1 || h[5].toInt() == 2) && h[4].toInt() == 0 -> image(MediaFormat.PSD)
+
+            EpsParser.looksLikePostScript(h) -> image(MediaFormat.EPS)
+
+            at(0, "ID3") && Mp3Parser.looksLikeMp3(s) -> Detection(MediaFormat.MP3, MediaKind.AUDIO)
+
             h.size >= 8 && at(4, "ftyp") -> isoBmff(s)
 
             h.size >= 8 && QT_TOP_LEVEL.any { at(4, it) } -> Detection(MediaFormat.MOV, MediaKind.VIDEO)
@@ -59,6 +69,13 @@ internal object FormatDetector {
             Bytes.startsWith(h, byteArrayOf(0x1A, 0x45, 0xDF.toByte(), 0xA3.toByte())) -> ebml(s)
 
             isHevcAnnexB(h) -> Detection(MediaFormat.HEVC, MediaKind.VIDEO)
+
+            // Weak signatures last, each confirmed by structure: a bare MPEG audio stream needs two consecutive frames.
+            h[0] == 0xFF.toByte() && Mp3Parser.looksLikeMp3(s) -> Detection(MediaFormat.MP3, MediaKind.AUDIO)
+
+            h[0] == 0x0A.toByte() && PcxParser.looksLikePcx(s.readAtMost(0, 128)) -> image(MediaFormat.PCX)
+
+            h[0] == 0.toByte() && h[1] == 0.toByte() && IcoParser.looksLikeIco(s) -> image(MediaFormat.ICO)
 
             else -> Detection(MediaFormat.UNKNOWN, MediaKind.UNKNOWN)
         }

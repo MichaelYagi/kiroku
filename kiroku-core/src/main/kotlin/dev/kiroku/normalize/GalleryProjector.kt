@@ -91,6 +91,8 @@ internal class GalleryProjector(
     private val png = { g: List<String> -> g.getOrNull(0) == "PNG" }
     private val maker = { g: List<String> -> g.getOrNull(0) == "MakerNotes" }
     private val composite = group("Composite")
+    private val id3v2 = group("ID3", "ID3v2_2", "ID3v2_3", "ID3v2_4")
+    private val id3v1 = group("ID3", "ID3v1")
 
     private fun xmp(ns: String) = group("XMP", "XMP-$ns")
 
@@ -1102,6 +1104,22 @@ internal class GalleryProjector(
                             Conversion.Rejected("IFD0 size applies to TIFF only")
                         }
                     }
+                sources +=
+                    src(4, group("Photoshop", "Photoshop"), "ImageWidth") { o ->
+                        if (format == MediaFormat.PSD) pair(o, "ImageHeight") else Conversion.Rejected("Photoshop header size applies to PSD only")
+                    }
+                // EPS: Photoshop's %ImageData gives pixel columns and rows. The BoundingBox is in points, not pixels.
+                sources +=
+                    src(6, group("PostScript", "PostScript"), "ImageData") { o ->
+                        val n = textOf(o.value)?.trim()?.split(Regex("\\s+"))?.take(2)?.mapNotNull { it.toIntOrNull() }
+                        if (n != null && n.size == 2 &&
+                            n.all { it in 1 until 1_000_000 }
+                        ) {
+                            Conversion.Ok(n[0] to n[1])
+                        } else {
+                            Conversion.Rejected("invalid ImageData")
+                        }
+                    }
                 sources += src(20, exifIfd, "ExifImageWidth") { o -> pair(o, "ExifImageHeight") }
                 sources += src(30, group("ffprobe", "stream"), "width") { o -> pair(o, "height") }
             }
@@ -1349,6 +1367,8 @@ internal class GalleryProjector(
                         convert = desc,
                     ),
                     src(14, riffInfo, "Title", convert = desc), src(15, png, "Title", convert = desc),
+                    src(16, id3v2, "Title", convert = desc), src(18, id3v1, "Title", convert = desc),
+                    src(19, group("PostScript", "PostScript"), "Title", convert = desc),
                 ),
                 caption =
                 textField(
@@ -1387,6 +1407,7 @@ internal class GalleryProjector(
                     ),
                     src(14, riffInfo, "Comment", convert = desc), src(15, png, "Comment", convert = desc),
                     src(16, mkvTags, "COMMENT", convert = desc),
+                    src(17, id3v2, "Comment", convert = desc), src(18, id3v1, "Comment", convert = desc),
                 ),
                 artist =
                 textField(
@@ -1409,6 +1430,7 @@ internal class GalleryProjector(
                     ),
                     src(12, riffInfo, "Artist", convert = desc), src(13, mkvTags, "ARTIST", convert = desc),
                     src(14, group("RIFF", "BroadcastExtension"), "Originator", convert = desc),
+                    src(15, id3v2, "Artist", convert = desc), src(18, id3v1, "Artist", convert = desc),
                 ),
                 copyright =
                 textField(
@@ -1437,6 +1459,8 @@ internal class GalleryProjector(
                     ),
                     src(12, riffInfo, "Copyright", convert = desc), src(13, png, "Copyright", convert = desc),
                     src(14, mkvTags, "COPYRIGHT", convert = desc),
+                    src(15, id3v2, "Copyright", convert = desc),
+                    src(16, group("PostScript", "PostScript"), "Copyright", convert = desc),
                 ),
                 creator =
                 r.resolve(
@@ -1522,6 +1546,8 @@ internal class GalleryProjector(
                     src(6, ilst, "©alb", "Album", convert = desc),
                     src(7, udta, "©alb", "Album", convert = desc),
                     src(8, mkvTags, "ALBUM", convert = desc),
+                    src(9, id3v2, "Album", convert = desc),
+                    src(10, id3v1, "Album", convert = desc),
                 ),
             )
         return d.takeUnless { it == DescriptionMetadata() }

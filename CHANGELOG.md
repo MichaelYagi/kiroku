@@ -8,6 +8,14 @@
 - Fujifilm **RAF**: header, embedded JPEG EXIF with the Fujifilm MakerNote, RAF directory (raw image sizes, crop,
   aspect, layout) and the FujiIFD. Gallery dimensions use `RawImageCroppedSize`, as ExifTool does.
 - CC0 CR3 and RAF samples in `scripts/fetch-fixtures.sh`, covered by both oracles, acceptance and robustness tests.
+- **MP3**: ID3v2.2/2.3/2.4 and ID3v1 tags, the MPEG frame header and Xing/Info/VBRI durations. ID3 title, artist,
+  album, comment and copyright feed the gallery description; the audio stream gives codec, sample rate and channels.
+- **PSD/PSB**, **EPS/PostScript**, **ICO/CUR** and **PCX**, verified against ExifTool's values.
+- Photoshop image resources are decoded into named values (resolution, print scale, global angle and altitude,
+  copyright flag, URL, slices, version info, JPEG quality, pixel aspect ratio, clipping path, thumbnail). This also
+  applies to the Photoshop block in JPEG and TIFF files.
+- XMP: `XMPToolkit` (including the pre-XMP-3 `x:xaptk` form) and `rdf:about` are reported.
+- `DiagnosticCode.ESTIMATED_VALUE` for values that are estimated rather than read.
 
 ### Fixed
 - XMP packets followed by NUL padding (Fujifilm) were rejected as malformed.
