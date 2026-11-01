@@ -54,6 +54,13 @@ class KirokuJsonTest {
     }
 
     @Test
+    fun `local times always include seconds`() {
+        // jpeg_no_timezone.jpg was taken at 18:05:00; LocalDateTime.toString() would write "18:05".
+        val g = extractor.extract(fixtures.resolve("media/generated/jpeg_no_timezone.jpg"), stable).gallery
+        assertTrue(KirokuJson.galleryToJson(g).contains("\"localDateTime\":\"2021-12-24T18:05:00\""))
+    }
+
+    @Test
     fun `pretty JSON uses LF line endings on every platform`() {
         val g = extractor.extract(fixtures.resolve("media/generated/jpeg_full_exif.jpg"), stable).gallery
         val json = KirokuJson.galleryToJson(g, JsonOptions(pretty = true))

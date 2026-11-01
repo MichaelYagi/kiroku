@@ -38,6 +38,7 @@
   tags are now matched by name, and non-printable version bytes are kept as numbers.
 - Casio `FirmwareDate` kept only its first NUL-separated part.
 - PostScript fonts (`%!PS-AdobeFont`) were detected as EPS images.
+- `kiroku-json` wrote local times with zero seconds as `HH:mm` (`LocalDateTime.toString()`); seconds are now always written.
 - Ricoh and Sanyo MakerNotes are parsed (8-byte header + IFD), including the PrintIM blocks inside them.
 - All 76 ExifTool sample files Kiroku reads are now committed fixtures (108 in total), so both oracles check them.
 

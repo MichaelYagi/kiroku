@@ -157,7 +157,8 @@ public object KirokuJson {
 
         fun instant(name: String, v: Instant?) = str(name, v?.toString())
 
-        fun local(name: String, v: LocalDateTime?) = str(name, v?.toString())
+        // ISO_LOCAL_DATE_TIME always writes seconds (LocalDateTime.toString() drops ":00").
+        fun local(name: String, v: LocalDateTime?) = str(name, v?.let { java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(it) })
 
         fun duration(name: String, v: Duration?) = str(name, v?.toString())
 
