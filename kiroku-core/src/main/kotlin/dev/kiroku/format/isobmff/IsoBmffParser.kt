@@ -196,12 +196,13 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
             "free", "skip", "wide", "mdat", "moof", "mfra", "sidx", "styp", "emsg", "prft", "pdin" -> Unit
 
             else ->
-                if (parent == "udta") {
-                    udtaItem(type, typeBytes, p, len, end, path, depth)
-                } else if (parent == "meta" && type == "dinf") {
-                    Unit
-                } else {
-                    raw(group(), type, typeBytes, p, len, path, known = false)
+                when {
+                    parent == "udta" -> udtaItem(type, typeBytes, p, len, end, path, depth)
+
+                    // A data-reference box inside 'meta' carries no metadata.
+                    parent == "meta" && type == "dinf" -> {}
+
+                    else -> raw(group(), type, typeBytes, p, len, path, known = false)
                 }
         }
     }
@@ -916,10 +917,11 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
 
                 else -> NormalizedValue.Binary(n)
             }
+        // Readable names as ExifTool uses them ("©lyr" -> Lyrics); the four-character code stays as the tag ID.
         obs(
-            g, name, value, v, n, path, type = "data:$typeInd",
+            g, (if (isKey) null else ITEM_NAMES[name]) ?: name, value, v, n, path, type = "data:$typeInd",
             tagId = tagId, namespace = if (isKey) "mdta" else null,
-            known = isKey || ITEM_NAMES.containsKey(name), display = if (!isKey) ITEM_NAMES[name] else null,
+            known = isKey || ITEM_NAMES.containsKey(name),
         )
     }
 
@@ -966,7 +968,13 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
                     if (l == 0 || pos + 4 + l > end) break
                     val lang = s.u16(pos + 2, true)
                     val bytes = s.read(pos + 4, l)
-                    val text = if (lang < 0x400 || lang == 0x7FFF) String(bytes, Charsets.ISO_8859_1) else String(bytes, Charsets.UTF_8)
+                    // Classic Mac language codes (< 0x400) mean Mac-encoded text (MacRoman); ISO 639 codes mean UTF-8.
+                    val text =
+                        when {
+                            lang < 0x400 -> String(bytes, MAC_ROMAN)
+                            lang == 0x7FFF -> String(bytes, Charsets.ISO_8859_1)
+                            else -> String(bytes, Charsets.UTF_8)
+                        }
                     values += NormalizedValue.Text(ctx.clip(text.trimEnd('\u0000')))
                     if (firstOff < 0) {
                         firstOff = pos + 4
@@ -978,14 +986,10 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
                     raw(g, name, typeBytes, p, len, path, known = false)
                 } else {
                     obs(
-                        g, name,
-                        NormalizedValue.list(
-                            values,
-                        ),
-                        firstOff, firstLen, path, "intlText", tagId = fourcc, display = ITEM_NAMES[name],
-                        known = ITEM_NAMES.containsKey(
-                            name,
-                        ),
+                        g, ITEM_NAMES[name] ?: name,
+                        NormalizedValue.list(values),
+                        firstOff, firstLen, path, "intlText", tagId = fourcc,
+                        known = ITEM_NAMES.containsKey(name),
                     )
                 }
             }
@@ -1574,6 +1578,9 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
                 "auth" to "Author", "gnre" to "Genre", "albm" to "Album", "kywd" to "Keywords", "yrrc" to "Year",
             )
 
+        /** MacRoman, or Latin-1 on a trimmed runtime without the jdk.charsets module. */
+        val MAC_ROMAN: java.nio.charset.Charset = runCatching { java.nio.charset.Charset.forName("x-MacRoman") }.getOrDefault(Charsets.ISO_8859_1)
+
         val ITEM_NAMES =
             mapOf(
                 "©nam" to "Title", "©ART" to "Artist", "©alb" to "Album", "©day" to "ContentCreateDate", "©too" to "Encoder",
@@ -1585,6 +1592,7 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
                 "©grp" to "Grouping", "©st3" to "Subtitle", "©key" to "Keywords",
                 "cprt" to "Copyright", "desc" to "Description", "ldes" to "LongDescription", "covr" to "CoverArt",
                 "trkn" to "TrackNumber", "disk" to "DiskNumber", "aART" to "AlbumArtist", "rtng" to "Rating",
+                "tmpo" to "BeatsPerMinute", "©com" to "Composer", "cpil" to "Compilation", "pgap" to "PlayGap",
             )
 
         fun handlerName(t: String): String? = when (t) {

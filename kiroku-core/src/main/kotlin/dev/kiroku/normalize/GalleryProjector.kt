@@ -1253,7 +1253,7 @@ internal class GalleryProjector(
             textField(
                 "video.encoder",
                 src(5, ilst, "©too", "Encoder", convert = str),
-                src(6, udta, "©too", "©enc", "Encoder", convert = str),
+                src(6, udta, "©too", "©enc", "Encoder", "EncodedBy", convert = str),
                 src(7, keys, "encoder", "Encoder", "com.apple.quicktime.encoder", convert = str),
                 src(10, group("Matroska", "Matroska"), "WritingApp", convert = str),
                 src(11, mkvTags, "ENCODER", "encoder", convert = str),
@@ -1537,7 +1537,7 @@ internal class GalleryProjector(
                     src(8, keys, "com.apple.quicktime.author", "Author", convert = desc),
                     src(9, udta, "©aut", "Author", convert = desc),
                     src(10, udta, "auth", convert = desc),
-                    src(11, ilst, "©aut", convert = desc),
+                    src(11, ilst, "©aut", "Author", convert = desc),
                 ),
                 album =
                 textField(
@@ -1824,7 +1824,7 @@ internal class GalleryProjector(
                     n.startsWith("GPS") &&
                         o.groupPath.getOrNull(0) in setOf("XMP", "Composite", "EXIF", "QuickTime", "Keys", "UserData", "ItemList")
                     ) ||
-                n == "©xyz" || n.startsWith("com.apple.quicktime.location") ||
+                n == "©xyz" || n == "GPSCoordinates" || n.startsWith("com.apple.quicktime.location") ||
                 n.startsWith("Location") && o.groupPath.getOrNull(0) == "QuickTime" ||
                 n.equals("location", ignoreCase = true) || n.startsWith("location-") || n == "LOCATION"
         }

@@ -45,6 +45,9 @@
 - Casio `FirmwareDate` kept only its first NUL-separated part.
 - PostScript fonts (`%!PS-AdobeFont`) were detected as EPS images.
 - `kiroku-json` wrote local times with zero seconds as `HH:mm` (`LocalDateTime.toString()`); seconds are now always written.
+- QuickTime/iTunes item-list and user-data atoms had their readable name as the *display value*; it is now the tag name
+  (`QuickTime:ItemList:Lyrics`, ExifTool's names), and the four-character code is the tag ID.
+- QuickTime user-data text with a classic Mac language code was decoded as Latin-1 instead of MacRoman.
 - Ricoh and Sanyo MakerNotes are parsed (8-byte header + IFD), including the PrintIM blocks inside them.
 - All 76 ExifTool sample files Kiroku reads are now committed fixtures (108 in total), so both oracles check them.
 

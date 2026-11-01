@@ -188,6 +188,21 @@ class AcceptanceTest {
         }
 
         @Test
+        fun `QuickTime item list and user data use readable names and the right text encoding`() {
+            val qt = x(Fixtures.et("QuickTime.mov")).full
+            assertEquals("These are lyrics", qt.find("QuickTime:ItemList:Lyrics").single().value.asText())
+            assertEquals(0xA96C7972L, qt.find("QuickTime:ItemList:Lyrics").single().tagId, "the four-character code stays as the tag ID")
+            assertEquals(
+                "128",
+                qt.find("QuickTime:ItemList:BeatsPerMinute").single().value.asText().orEmpty().ifEmpty {
+                    qt.find("QuickTime:ItemList:BeatsPerMinute").single().value.asLong().toString()
+                },
+            )
+            // User-data text with a Mac language code is MacRoman, not Latin-1.
+            assertEquals("ålbum", qt.find("QuickTime:UserData:Album").single().value.asText())
+        }
+
+        @Test
         fun `MP3 with ID3v2_2, ID3v2_4 and without tags`() {
             val et = x(Fixtures.et("MP3.mp3"))
             assertEquals(MediaKind.AUDIO, et.gallery.mediaKind)
@@ -318,7 +333,7 @@ class AcceptanceTest {
             assertEquals(Instant.parse("2005-08-11T14:03:54Z"), t.instant)
             assertEquals("QuickTime:MovieHeader:CreateDate", t.source)
             val prov = r.full.fieldProvenance.getValue("capturedAt")
-            assertTrue(prov.candidates.any { it.source.qualifiedName == "QuickTime:ItemList:©day" }, "the year-only value stays a candidate")
+            assertTrue(prov.candidates.any { it.source.qualifiedName == "QuickTime:ItemList:ContentCreateDate" }, "the year-only value stays a candidate")
         }
 
         @Test
