@@ -109,7 +109,9 @@ internal object EpsParser {
                 !imageData && text.startsWith("%ImageData:") -> {
                     imageData = true
                     val value = text.substringAfter(':').trim()
-                    dsc(ctx, s, psStart + pos + text.indexOf(value), value, "ImageData", known = true)
+                    val valueAt = psStart + pos + text.indexOf(value)
+                    dsc(ctx, s, valueAt, value, "ImageData", known = true)
+                    imageDataFields(ctx, s, valueAt, value)
                 }
 
                 text.startsWith("%BeginPhotoshop:") -> {
@@ -151,6 +153,31 @@ internal object EpsParser {
         known = known,
         sourcePath = "PostScript/Comments",
     )
+
+    /**
+     * Photoshop's `%ImageData: columns rows depth mode padChannels blockSize binary/hex "beginimage"`. The first four
+     * fields are also reported on their own in `PostScript:ImageData`; mode is 1 grayscale, 2 Lab, 3 RGB, 4 CMYK.
+     */
+    private fun imageDataFields(ctx: NativeContext, s: ByteSource, valueAt: Long, value: String) {
+        val fields = Regex("\\S+").findAll(value).take(4).toList()
+        val nums = fields.map { it.value.toLongOrNull() }
+        if (nums.size < 4 || nums.any { it == null || it < 0 }) return
+        val names = listOf("ImageWidth", "ImageHeight", "BitsPerSample", "ColorMode")
+        for (i in 0 until 4) {
+            val v = nums[i]!!
+            ctx.observe(
+                listOf("PostScript", "ImageData"),
+                names[i],
+                NormalizedValue.Integer(v),
+                original = ctx.original(s, valueAt + fields[i].range.first, fields[i].value.length.toLong()),
+                nativeType = NativeType(TypeSystem.POSTSCRIPT, "ImageData field"),
+                displayValue = if (i == 3) COLOR_MODES[v.toInt()] else null,
+                sourcePath = "PostScript/Comments/ImageData",
+            )
+        }
+    }
+
+    private val COLOR_MODES = mapOf(1 to "Grayscale", 2 to "Lab", 3 to "RGB", 4 to "CMYK")
 
     private fun preview(ctx: NativeContext, s: ByteSource, offset: Long, length: Long, name: String, mime: String, compression: String) {
         if (length <= 0 || !s.contains(offset, length)) return

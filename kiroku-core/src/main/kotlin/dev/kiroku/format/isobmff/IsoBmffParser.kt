@@ -1133,6 +1133,11 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
                 canonUuid(p, end, path)
             }
 
+            CANON_PREVIEW_UUID -> {
+                raw(group(), "uuid:$id", Bytes.ascii("uuid"), p, end - p, path, known = false)
+                canonPreview(p, end, path)
+            }
+
             EXIF_UUID_SONY_PSP -> raw(group(), "uuid:$id", Bytes.ascii("uuid"), p, end - p, path, known = false)
 
             else -> {
@@ -1202,6 +1207,33 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
             ctx.collector.embeddedImage(
                 EmbeddedImageInfo(
                     0, "", EmbeddedImageKind.THUMBNAIL, g, width = w, height = h, compression = "JPEG", mimeType = "image/jpeg",
+                    fileOffset = s.absolute(jpegAt), length = jpegLen,
+                ),
+            )
+        }
+    }
+
+    /**
+     * CR3 preview box: 8 bytes, then a `PRVW` box holding 6 header bytes, width and height (u16), 2 more bytes, the
+     * JPEG length (u32) and the JPEG itself.
+     */
+    private fun canonPreview(p: Long, end: Long, path: String) {
+        val box = p + 8
+        if (box + 24 > end || s.ascii(box + 4, 4) != "PRVW") return
+        val size = s.u32(box, true)
+        if (size < 24 || box + size > end) return
+        val d = box + 8
+        val g = listOf("QuickTime", "Canon")
+        val w = s.u16(d + 6, true)
+        val h = s.u16(d + 8, true)
+        val jpegLen = s.u32(d + 12, true)
+        val jpegAt = d + 16
+        obs(g, "PreviewImageWidth", NormalizedValue.Integer(w.toLong()), d + 6, 2, "$path/PRVW")
+        obs(g, "PreviewImageHeight", NormalizedValue.Integer(h.toLong()), d + 8, 2, "$path/PRVW")
+        if (jpegLen > 0 && jpegAt + jpegLen <= box + size && s.u16(jpegAt, true) == 0xFFD8) {
+            ctx.collector.embeddedImage(
+                EmbeddedImageInfo(
+                    0, "", EmbeddedImageKind.PREVIEW, g, width = w, height = h, compression = "JPEG", mimeType = "image/jpeg",
                     fileOffset = s.absolute(jpegAt), length = jpegLen,
                 ),
             )
@@ -1626,6 +1658,7 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
         private const val QT_EPOCH_OFFSET = 2082844800L
         private const val XMP_UUID = "be7acfcb97a942e89c71999491e3afac"
         private const val EXIF_UUID_CANON = "85c0b687820f11e08111f4ce462b6a48"
+        private const val CANON_PREVIEW_UUID = "eaf42b5e1c984b88b9fbb7dc406e4d16"
         private const val EXIF_UUID_SONY_PSP = "50524f4621d24fcebb88695cfac9c740"
 
         /** QuickTime/ISO times are seconds since 1904-01-01 UTC. `0` means unset. */

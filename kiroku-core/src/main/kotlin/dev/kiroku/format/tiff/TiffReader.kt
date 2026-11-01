@@ -305,6 +305,7 @@ internal class TiffReader(
 
         if (makerNoteTags == null) recordImage(group, entries, groupFamily0)
         if (makerNoteTags == null && !ctx.fast) GeoTiff.decode(ctx, source, entries, bigEndian, path)
+        if (tagTable == TagTable.PANASONIC_RAW && !ctx.fast) PanasonicRaw.decode(ctx, source, entries, bigEndian, path)
         if (group == "IFD0" && groupFamily0 == family0) {
             entries.firstOrNull { it.tag == TiffTags.MAKE }?.value?.let { make = (it as? NormalizedValue.Text)?.value?.trim() }
             entries.firstOrNull { it.tag == TiffTags.MODEL }?.value?.let { model = (it as? NormalizedValue.Text)?.value?.trim() }

@@ -158,6 +158,9 @@ class AcceptanceTest {
             assertEquals("Adobe Photoshop Version 7.0.1", eps.full.find("PostScript:PostScript:Creator").single().value.asText())
             assertEquals("0 0 8 8", eps.full.find("PostScript:PostScript:BoundingBox").single().value.asText())
             assertEquals(8 to 8, eps.gallery.dimensions!!.storedWidth to eps.gallery.dimensions!!.storedHeight)
+            assertEquals(8L, eps.full.find("PostScript:ImageData:ImageWidth").single().value.asLong())
+            assertEquals(3L, eps.full.find("PostScript:ImageData:ColorMode").single().value.asLong())
+            assertEquals("RGB", eps.full.find("PostScript:ImageData:ColorMode").single().displayValue)
             assertEquals("Phil Harvey", eps.full.find("IPTC:IPTC:By-line").first().value.asText(), "IPTC from the hex %BeginPhotoshop block")
             assertEquals(3, eps.full.find("IPTC:IPTC:Keywords").size)
 
@@ -181,6 +184,9 @@ class AcceptanceTest {
             assertEquals(16017L, geo.find("GeoTiff:GeoTiff:Projection").single().value.asLong())
 
             val jpg = x(Fixtures.et("ExifTool.jpg")).full
+            // SOF components and DHT table count, as metadata-extractor reports them.
+            assertEquals(listOf(1L, 2L, 2L, 0L), jpg.find("File:File:Component1").single().value.asList().map { it.asLong() })
+            assertEquals(4L, jpg.find("File:File:HuffmanTables").single().value.asLong())
             assertEquals("0250", jpg.find("PrintIM:PrintIM:PrintIMVersion").single().value.asText(), "PrintIM in an APP6 EPPIM segment")
             assertEquals(1441814L, jpg.find("PrintIM:PrintIM:PrintIM_0x0001").single().value.asLong())
             assertEquals(84L, jpg.find("Ducky:Ducky:Quality").single().value.asLong())
@@ -231,6 +237,19 @@ class AcceptanceTest {
             assertEquals(MediaFormat.MP3.id, bare.gallery.format, "detected from two consecutive MPEG frames")
             assertTrue(bare.diagnostics.any { it.code == DiagnosticCode.ESTIMATED_VALUE })
             assertEquals(1.03, bare.gallery.audio!!.duration!!.toMillis() / 1000.0, 0.01)
+            assertEquals(384L, bare.full.find("MPEG:MPEG:FrameSize").single().value.asLong(), "144 * 128 kbps / 48 kHz, as metadata-extractor reports")
+        }
+
+        @Test
+        fun `Panasonic RAW white balance presets and distortion info`() {
+            // Checked against ExifTool and metadata-extractor.
+            val rw2 = x(Fixtures.et("Panasonic.rw2")).full
+            assertEquals(7L, rw2.find("PanasonicRaw:WBInfo2:NumWBEntries").single().value.asLong())
+            assertEquals("ISO Studio Tungsten", rw2.find("PanasonicRaw:WBInfo2:WBType7").single().displayValue)
+            assertEquals(listOf(378L, 256L, 592L), rw2.find("PanasonicRaw:WBInfo2:WB_RGBLevels7").single().value.asList().map { it.asLong() })
+            assertEquals("On", rw2.find("PanasonicRaw:DistortionInfo:DistortionCorrection").single().displayValue)
+            assertEquals(-778L, rw2.find("PanasonicRaw:DistortionInfo:DistortionParam11").single().value.asLong())
+            assertEquals(2280L, rw2.find("PanasonicRaw:DistortionInfo:DistortionN").single().value.asLong())
         }
 
         @Test
@@ -475,6 +494,10 @@ class AcceptanceTest {
                 assertEquals(model, g.camera!!.model)
                 assertNull(g.video, "a CR3's image tracks are not a video")
                 assertTrue(r.full.observations.count { it.groupPath == listOf("MakerNotes", "Canon") } > 20, "Canon MakerNote from CMT3")
+                assertEquals(1620L, r.full.find("QuickTime:Canon:PreviewImageWidth").single().value.asLong(), name)
+                assertEquals(1080L, r.full.find("QuickTime:Canon:PreviewImageHeight").single().value.asLong(), name)
+                val preview = r.full.embeddedImages.single { it.kind == dev.kiroku.model.EmbeddedImageKind.PREVIEW }
+                assertEquals(1620 to 1080, preview.width to preview.height, "PRVW preview, $name")
             }
             val r6 = x(Fixtures.ext("canon_eos_r6.cr3")).gallery
             assertEquals("RF70-200mm F2.8 L IS USM", r6.camera!!.lensModel)

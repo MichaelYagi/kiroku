@@ -95,6 +95,8 @@ internal object JpegParser {
         val extXmp = HashMap<String, MutableList<Triple<Long, Long, ByteArray>>>()
         val extXmpLen = HashMap<String, Long>()
         var sawSos = false
+        var huffmanTables = 0
+        var dhtPath: String? = null
         while (pos + 4 <= source.size) {
             ctx.countBox()
             if (source.u8(pos) != 0xFF) {
@@ -276,6 +278,11 @@ internal object JpegParser {
 
                 marker == 0xDA -> sawSos = true
 
+                marker == 0xC4 -> {
+                    huffmanTables += countHuffmanTables(source, dataStart, dataLen)
+                    if (dhtPath == null) dhtPath = segPath
+                }
+
                 marker in 0xE0..0xEF -> {
                     val ident = head.takeWhile { it != 0.toByte() }.take(40).toByteArray().toString(Charsets.ISO_8859_1)
                     ctx.observe(
@@ -289,6 +296,15 @@ internal object JpegParser {
             }
             if (sawSos) break
             pos = dataStart + dataLen
+        }
+        if (huffmanTables > 0) {
+            ctx.observe(
+                fileGroup,
+                "HuffmanTables",
+                NormalizedValue.Integer(huffmanTables.toLong()),
+                nativeType = NativeType(TypeSystem.JPEG, "DHT", null, null),
+                sourcePath = dhtPath,
+            )
         }
         finishIcc(ctx, source, iccChunks, iccTotal, prefix)
         for ((guid, parts) in extXmp) {
@@ -339,6 +355,24 @@ internal object JpegParser {
         obs(ctx, group, "ImageHeight", NormalizedValue.Integer(height.toLong()), source, off + 1, 2, path)
         obs(ctx, group, "ImageWidth", NormalizedValue.Integer(width.toLong()), source, off + 3, 2, path)
         obs(ctx, group, "ColorComponents", NormalizedValue.Integer(comps.toLong()), source, off + 5, 1, path)
+        // Per component: ID, sampling factors (horizontal, vertical) and quantisation table.
+        for (i in 0 until minOf(comps, ((len - 6) / 3).toInt())) {
+            val c = 6 + i * 3
+            val id = b[c].toInt() and 0xFF
+            val h = (b[c + 1].toInt() shr 4) and 0xF
+            val v = b[c + 1].toInt() and 0xF
+            val q = b[c + 2].toInt() and 0xFF
+            val label = COMPONENT_NAMES[id] ?: "Component $id"
+            ctx.observe(
+                group,
+                "Component${i + 1}",
+                NormalizedValue.list(listOf(id, h, v, q).map { NormalizedValue.Integer(it.toLong()) }),
+                original = ctx.original(source, off + c, 3),
+                nativeType = NativeType(TypeSystem.JPEG, "int8u", 3, 3),
+                displayValue = "$label: quantisation table $q, sampling factors $h horiz/$v vert",
+                sourcePath = path,
+            )
+        }
         if (comps == 3 && len >= 6 + 9) {
             val h0 = (b[7].toInt() shr 4) and 0xF
             val v0 = b[7].toInt() and 0xF
@@ -430,6 +464,22 @@ internal object JpegParser {
         displayValue = display,
         sourcePath = path,
     )
+
+    /** A DHT segment holds one or more tables: class/ID byte, 16 code-length counts, then the symbols. */
+    private fun countHuffmanTables(source: ByteSource, off: Long, len: Long): Int {
+        var p = 0L
+        var n = 0
+        while (p + 17 <= len && n < 32) {
+            var symbols = 0
+            for (k in 1..16) symbols += source.u8(off + p + k)
+            p += 17 + symbols
+            if (p > len) break
+            n++
+        }
+        return n
+    }
+
+    private val COMPONENT_NAMES = mapOf(1 to "Y", 2 to "Cb", 3 to "Cr", 4 to "I", 5 to "Q")
 
     private fun isSof(m: Int): Boolean = m in 0xC0..0xCF && m != 0xC4 && m != 0xC8 && m != 0xCC
 

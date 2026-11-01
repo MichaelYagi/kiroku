@@ -406,6 +406,7 @@ internal object TiffTags {
             0x0024 to "WBRedLevel",
             0x0025 to "WBGreenLevel",
             0x0026 to "WBBlueLevel",
+            0x0027 to "WBInfo2",
             0x002D to "RawFormat",
             0x002E to "JpgFromRaw",
             0x002F to "CropTop",
@@ -413,6 +414,7 @@ internal object TiffTags {
             0x0031 to "CropBottom",
             0x0032 to "CropRight",
             0x0118 to "RawDataOffset",
+            0x0119 to "DistortionInfo",
         )
 
     /** Units for tags whose unit is fixed by the EXIF specification. */

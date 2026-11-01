@@ -33,6 +33,12 @@
 - GIF per-frame details in groups `GIF:Frame<n>` (first 1000 frames): position, size, local colour table, interlacing,
   disposal method, user-input and transparency flags, transparent colour index and frame delay; plus the header's
   ColorTableSorted flag.
+- JPEG: per-component ID, sampling factors and quantisation table (`Component1`..), and the Huffman table count.
+- CR3: the `PRVW` preview's width and height, and the preview JPEG as an embedded image.
+- EPS: Photoshop's `%ImageData` split into ImageWidth, ImageHeight, BitsPerSample and ColorMode
+  (`PostScript:ImageData`).
+- Panasonic RW2: `WBInfo2` white-balance presets (light source and RGB levels per entry) and `DistortionInfo`.
+- MP3: the first frame's size in bytes (computed).
 
 ### Fixed
 - XMP packets followed by NUL padding (Fujifilm) were rejected as malformed.

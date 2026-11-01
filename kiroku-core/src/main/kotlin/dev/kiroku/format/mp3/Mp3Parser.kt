@@ -431,6 +431,18 @@ internal object Mp3Parser {
         bits("CopyrightFlag", (h ushr 3) and 1, if ((h ushr 3) and 1L == 1L) "True" else "False")
         bits("OriginalMedia", (h ushr 2) and 1, if ((h ushr 2) and 1L == 1L) "True" else "False")
         bits("Emphasis", h and 3, arrayOf("None", "50/15 ms", "reserved", "CCIT J.17")[(h and 3).toInt()])
+        if (f.frameLength > 0) {
+            // Computed from bitrate, sample rate and the padding bit; not stored in the file.
+            ctx.observe(
+                MPEG,
+                "FrameSize",
+                NormalizedValue.Integer(f.frameLength.toLong()),
+                nativeType = NativeType(TypeSystem.MPEG, "computed"),
+                unit = "bytes",
+                displayValue = "${f.frameLength} bytes",
+                sourcePath = "MPEG/FrameHeader",
+            )
+        }
 
         val channels = if (f.channelMode == 3) 1 else 2
         // Xing/Info (layer III, after the side information) or VBRI (32 bytes after the header) give the frame count.
