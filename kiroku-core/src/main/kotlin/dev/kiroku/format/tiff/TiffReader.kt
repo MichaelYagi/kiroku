@@ -115,7 +115,60 @@ internal class TiffReader(
         return TiffSummary(h, make, model, dng, images.toList())
     }
 
+    /**
+     * Reads a TIFF block whose first IFD is a known directory rather than IFD0. Canon CR3 stores its metadata this way:
+     * `CMT2` is the Exif IFD, `CMT3` the Canon MakerNote IFD and `CMT4` the GPS IFD, each with its own TIFF header.
+     * With [makerNoteVendor] set, the IFD is read as that vendor's MakerNote (group `MakerNotes:<vendor>`).
+     */
+    fun parseAs(group: String, tagTable: TagTable, makerNoteVendor: String? = null): TiffSummary? {
+        val h = readHeader(source) ?: run {
+            ctx.warn(DiagnosticCode.MALFORMED, "Invalid TIFF header in $sourcePrefix")
+            return null
+        }
+        header = h
+        ctx.collector.directory(pathOf("TIFF"), DirectoryKind.TIFF_IFD, source.absolute(0), source.size, h.order, note = "TIFF header ($group)")
+        try {
+            if (makerNoteVendor != null) {
+                ctx.facts["makernote.vendor"] = makerNoteVendor
+                readIfd(
+                    offset = h.firstIfdOffset,
+                    group = makerNoteVendor,
+                    path = "$sourcePrefix/$makerNoteVendor",
+                    tagTable = TagTable.MAKERNOTE,
+                    depth = 0,
+                    groupFamily0 = "MakerNotes",
+                    makerNoteTags = MakerNoteTags.forVendor(makerNoteVendor),
+                    subIfdTags = MakerNoteTags.subIfdTags(makerNoteVendor),
+                )
+            } else {
+                readIfd(h.firstIfdOffset, group, "$sourcePrefix/$group", tagTable, depth = 0)
+            }
+        } catch (e: LimitExceededException) {
+            ctx.warn(DiagnosticCode.LIMIT_EXCEEDED, e.message ?: "limit exceeded", e)
+        }
+        return TiffSummary(h, make, model, dng, images.toList())
+    }
+
     private fun pathOf(vararg tail: String): List<String> = sourcePrefix.split('/') + tail
+
+    private object FujiTags {
+        const val FUJI_IFD = 0xF000
+
+        // Names as ExifTool's FujiFilm::IFD table uses them.
+        val FUJI_IFD_TAGS =
+            mapOf(
+                0xF000 to "FujiIFD",
+                0xF001 to "RawImageFullWidth",
+                0xF002 to "RawImageFullHeight",
+                0xF003 to "BitsPerSample",
+                0xF007 to "StripOffsets",
+                0xF008 to "StripByteCounts",
+                0xF00A to "BlackLevel",
+                0xF00C to "WB_GRBLevelsStandard",
+                0xF00D to "WB_GRBLevelsAuto",
+                0xF00E to "WB_GRBLevels",
+            )
+    }
 
     /**
      * Reads one IFD at [offset] (in source coordinates). Returns the next-IFD offset, `0` for none,
@@ -364,6 +417,14 @@ internal class TiffReader(
             TiffTags.PHOTOSHOP -> PhotoshopParser.parse(ctx, source, entry.dataOffset, entry.dataSize, "$path/Photoshop")
 
             TiffTags.ICC_PROFILE -> IccParser.parse(ctx, source, entry.dataOffset, entry.dataSize, "$path/ICC_Profile")
+
+            // Fujifilm RAF raw data: IFD0 points to the FujiIFD (raw size, bit depth, black and white levels).
+            FujiTags.FUJI_IFD ->
+                if (family0 == "RAF" && group == "IFD0") {
+                    pointerTargets(entry).firstOrNull()?.let {
+                        readIfd(it, "FujiIFD", "$path/FujiIFD", TagTable.MAIN, depth + 1, makerNoteTags = FujiTags.FUJI_IFD_TAGS)
+                    }
+                }
 
             TiffTags.PANASONIC_JPG_FROM_RAW ->
                 if (header.variant == TiffVariant.RW2 && group == "IFD0" && !ctx.fast && entry.dataSize > 4) {

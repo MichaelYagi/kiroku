@@ -1041,6 +1041,7 @@ internal class GalleryProjector(
         val sources = ArrayList<Source<Pair<Int, Int>>>()
         when {
             isRaw -> {
+                rafCropped()?.let { return it }
                 dngCrop()?.let { return it }
                 rawPrimary()?.let { (w, h, grp) ->
                     val obs = observations.firstOrNull { it.groupPath == listOf("EXIF", grp) && it.tagName == "ImageWidth" }
@@ -1108,6 +1109,15 @@ internal class GalleryProjector(
         val wh = r.resolve("dimensions", sources, { NormalizedValue.Text("${it.first}x${it.second}") }) ?: return null
         val par = r.observations(setOf("PixelAspectRatio"), qtMeta).firstOrNull()?.value?.asRational()
         return Triple(wh.first, wh.second, par)
+    }
+
+    /** Fujifilm RAF: `RawImageCroppedSize` (stored as height, width) in the RAF directory, the size ExifTool reports. */
+    private fun rafCropped(): Triple<Int, Int, Rational?>? {
+        val o = observations.firstOrNull { it.groupPath == listOf("RAF", "RAF") && it.tagName == "RawImageCroppedSize" } ?: return null
+        val l = o.value.asList().mapNotNull { it.asLong() }
+        if (l.size != 2 || l.any { it <= 0 || it >= 1_000_000 }) return null
+        r.record("dimensions", o, listOf(o to o.value), "Fujifilm RAF cropped raw size (RAF:RAF:RawImageCroppedSize)")
+        return Triple(l[1].toInt(), l[0].toInt(), null)
     }
 
     private fun dngCrop(): Triple<Int, Int, Rational?>? {

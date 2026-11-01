@@ -43,6 +43,8 @@ ExifTool **and** metadata-extractor in tests.
 | HEIF / HEIC / AVIF | image | ftyp brands, primary item, ispe/irot/imir/pixi/colr/hvcC, Exif and XMP items, thumbnails/aux items | ExifTool sample |
 | TIFF / BigTIFF | image or RAW | multi-IFD, SubIFDs, RAW-vs-image classification | generated, ExifTool sample |
 | NEF, CR2, ORF, ARW, RW2, RWL, SRW, DNG | RAW | TIFF-variant headers, all IFDs, vendor MakerNote IFDs, DNG tags + DNGPrivateData, RW2 JpgFromRaw | ExifTool samples + 9 CC0 camera files |
+| CR3 | RAW | ISO-BMFF container, Canon CMT1–CMT4 (IFD0, Exif, Canon MakerNote, GPS), THMB thumbnail, image tracks | 2 CC0 camera files (EOS R6, R6 Mark III CRAW) |
+| RAF | RAW | RAF header, embedded JPEG EXIF + Fujifilm MakerNote, RAF directory (raw sizes, layout), FujiIFD | 2 CC0 camera files (FinePix S5000, X-S10) |
 | MOV / MP4 / M4A / 3GP | video/audio | mvhd/tkhd (display matrix)/mdhd/hdlr/stsd (avcC, hvcC + SPS VUI, av1C, colr, pasp, btrt, clli, mdcv), stts/stsz, Apple `mdta` keys, iTunes `ilst`, QuickTime `udta` incl. ©xyz, 3GPP `loci`, XMP | generated (iPhone-style, Android-style, stripped, HDR10, VFR, mixed streams), ExifTool sample |
 | AVI | video | avih, strh/strf, INFO, IDIT, vendor `strd` EXIF | generated, ExifTool samples |
 | WebM / Matroska | video | EBML header, Info, Tracks (incl. Colour), Tags, Chapters, Attachments | generated, ExifTool sample |
@@ -77,7 +79,7 @@ API, so Java 17+ and Kotlin 2.0+ applications (for example Spring Boot 3.x) can 
 ./gradlew build                      # compile, test, ktlint, all modules
 ./gradlew publishToMavenLocal        # dev.kiroku:kiroku-core:0.1.1 etc.
 ./gradlew :kiroku-cli:installDist    # kiroku-cli/build/install/kiroku/bin/kiroku
-scripts/fetch-fixtures.sh            # optional: 61 MB of CC0 RAW samples for the RAW integration tests
+scripts/fetch-fixtures.sh            # optional: 102 MB of CC0 RAW samples for the RAW integration tests
 ```
 
 Optional tools for deep mode and for the oracle and integration tests:

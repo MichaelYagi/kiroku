@@ -2,6 +2,7 @@ package dev.kiroku.format.isobmff
 
 import dev.kiroku.format.NativeContext
 import dev.kiroku.format.icc.IccParser
+import dev.kiroku.format.tiff.TagTable
 import dev.kiroku.format.tiff.TiffReader
 import dev.kiroku.format.xmp.XmpParser
 import dev.kiroku.io.ByteSource
@@ -1053,13 +1054,83 @@ internal class IsoBmffParser(private val ctx: NativeContext, private val s: Byte
         when (id) {
             XMP_UUID -> XmpParser.parse(ctx, s, p, end - p, "$path/XMP")
 
-            EXIF_UUID_CANON, EXIF_UUID_SONY_PSP -> raw(group(), "uuid:$id", Bytes.ascii("uuid"), p, end - p, path, known = false)
+            EXIF_UUID_CANON -> {
+                raw(group(), "uuid:$id", Bytes.ascii("uuid"), p, end - p, path, known = false)
+                canonUuid(p, end, path)
+            }
+
+            EXIF_UUID_SONY_PSP -> raw(group(), "uuid:$id", Bytes.ascii("uuid"), p, end - p, path, known = false)
 
             else -> {
                 val head = s.readAtMost(p, 16)
                 raw(group(), "uuid:$id", Bytes.ascii("uuid"), p, end - p, path, known = false)
                 findTiff(head)?.let { TiffReader(ctx, s.slice(p + it, end - p - it), "$path/TIFF").parse() }
             }
+        }
+    }
+
+    /**
+     * Canon's metadata box. In CR3 files it holds `CMT1`..`CMT4`, each a complete TIFF block (IFD0, Exif IFD, Canon
+     * MakerNote IFD, GPS IFD), plus `CNCV` (compressor version) and a `THMB` thumbnail. Canon MOV videos use the
+     * same box with other children, which stay in the byte-exact blob recorded by the caller.
+     */
+    private fun canonUuid(p: Long, end: Long, path: String) {
+        val g = listOf("QuickTime", "Canon")
+        var pos = p
+        var n = 0
+        while (pos + 8 <= end && n++ < 64) {
+            ctx.countBox()
+            val size = s.u32(pos, true)
+            if (size < 8 || pos + size > end) {
+                ctx.warn(DiagnosticCode.MALFORMED, "Invalid box size in Canon metadata at offset $pos", severity = Severity.INFO)
+                break
+            }
+            val type = s.ascii(pos + 4, 4)
+            val d = pos + 8
+            val len = size - 8
+            val cpath = "$path/$type"
+            when (type) {
+                "CNCV" -> obs(
+                    g,
+                    "CompressorVersion",
+                    NormalizedValue.Text(s.ascii(d, minOf(len, 256L).toInt()).trimEnd('\u0000', ' ')),
+                    d,
+                    len,
+                    cpath,
+                    "string",
+                )
+
+                "CMT1" -> TiffReader(ctx, s.slice(d, len), "$cpath/TIFF").parse()
+
+                "CMT2" -> TiffReader(ctx, s.slice(d, len), "$cpath/TIFF").parseAs("ExifIFD", TagTable.MAIN)
+
+                "CMT3" -> if (!ctx.fast) TiffReader(ctx, s.slice(d, len), "$cpath/TIFF").parseAs("Canon", TagTable.MAKERNOTE, makerNoteVendor = "Canon")
+
+                "CMT4" -> TiffReader(ctx, s.slice(d, len), "$cpath/TIFF").parseAs("GPS", TagTable.GPS)
+
+                "THMB" -> canonThumbnail(g, d, len, cpath)
+            }
+            pos += size
+        }
+    }
+
+    /** CR3 `THMB`: a small JPEG thumbnail with its size in front (version 0: JPEG at +16, version 1: at +24). */
+    private fun canonThumbnail(g: List<String>, d: Long, len: Long, path: String) {
+        if (len < 16) return
+        val version = s.u8(d)
+        val w = s.u16(d + 4, true)
+        val h = s.u16(d + 6, true)
+        val jpegLen = s.u32(d + 8, true)
+        val jpegAt = d + if (version == 1) 24 else 16
+        obs(g, "ThumbnailWidth", NormalizedValue.Integer(w.toLong()), d + 4, 2, path)
+        obs(g, "ThumbnailHeight", NormalizedValue.Integer(h.toLong()), d + 6, 2, path)
+        if (jpegLen > 0 && s.contains(jpegAt, jpegLen) && s.u16(jpegAt, true) == 0xFFD8) {
+            ctx.collector.embeddedImage(
+                EmbeddedImageInfo(
+                    0, "", EmbeddedImageKind.THUMBNAIL, g, width = w, height = h, compression = "JPEG", mimeType = "image/jpeg",
+                    fileOffset = s.absolute(jpegAt), length = jpegLen,
+                ),
+            )
         }
     }
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Canon **CR3**: detected by its `crx` brand and read as RAW. EXIF IFD0, Exif IFD, Canon MakerNote and GPS come from the
+  CMT1–CMT4 boxes; the THMB thumbnail is listed. Before, CR3 was misdetected as an MP4 video.
+- Fujifilm **RAF**: header, embedded JPEG EXIF with the Fujifilm MakerNote, RAF directory (raw image sizes, crop,
+  aspect, layout) and the FujiIFD. Gallery dimensions use `RawImageCroppedSize`, as ExifTool does.
+- CC0 CR3 and RAF samples in `scripts/fetch-fixtures.sh`, covered by both oracles, acceptance and robustness tests.
+
+### Fixed
+- XMP packets followed by NUL padding (Fujifilm) were rejected as malformed.
+
 ## 0.1.1 (2026-10-31)
 
 ### Fixed

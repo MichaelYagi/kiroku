@@ -33,6 +33,10 @@ internal object FormatNotes {
         MediaFormat.SRW, MediaFormat.PEF, MediaFormat.TIFF_RAW,
         -> tiffFamilies + "RAW"
 
+        MediaFormat.CR3 -> setOf("ISOBMFF", "QuickTime", "Canon", "EXIF", "GPS", "MakerNotes", "XMP", "RAW")
+
+        MediaFormat.RAF -> setOf("RAF", "JPEG", "EXIF", "GPS", "MakerNotes", "RAW")
+
         MediaFormat.MP4, MediaFormat.MOV, MediaFormat.M4A, MediaFormat.THREE_GP -> setOf(
             "QuickTime",
             "ISOBMFF",
@@ -68,6 +72,18 @@ internal object FormatNotes {
             listOf(
                 "MakerNote IFDs are decoded byte-exactly; tag names cover common tags only, unknown vendor tags keep numeric IDs.",
                 "Encrypted MakerNote structures (e.g. Nikon LensData/ShotInfo, Sony 0x94xx) are preserved as raw bytes, not decrypted. Use ExifTool deep mode for decoded values.",
+            )
+
+        MediaFormat.CR3 ->
+            listOf(
+                "Metadata comes from the Canon CMT1-CMT4 boxes (IFD0, Exif, Canon MakerNote, GPS); the CR3 image tracks are listed as streams.",
+                "Canon timed metadata (CTMD) samples and the PRVW preview box are not decoded.",
+            )
+
+        MediaFormat.RAF ->
+            listOf(
+                "Camera metadata comes from the EXIF of the embedded full-size JPEG, as in the camera's own files.",
+                "Only the RAF directory tags named by ExifTool get names; the rest keep numeric IDs. Raw pixel data is not decoded.",
             )
 
         MediaFormat.MP4, MediaFormat.MOV, MediaFormat.THREE_GP ->

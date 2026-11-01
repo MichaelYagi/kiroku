@@ -255,7 +255,7 @@ public enum class OmissionReason {
 }
 
 /** The native type system a value was read from. */
-public enum class TypeSystem { TIFF, IPTC, ISOBMFF, RIFF, EBML, XMP, PNG, GIF, JPEG, BMP, ICC, HEVC, EXIFTOOL, FFPROBE, FILESYSTEM }
+public enum class TypeSystem { TIFF, IPTC, ISOBMFF, RIFF, EBML, XMP, PNG, GIF, JPEG, BMP, ICC, HEVC, EXIFTOOL, FFPROBE, FILESYSTEM, RAF }
 
 /**
  * The native data type of a value, for example TIFF `RATIONAL` (code 5) with count 2.

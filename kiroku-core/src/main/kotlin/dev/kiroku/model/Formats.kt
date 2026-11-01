@@ -28,6 +28,8 @@ public enum class MediaFormat(public val id: String, public val mimeType: String
     RWL("RWL", "image/x-leica-rwl", MediaKind.RAW_IMAGE, setOf("rwl")),
     SRW("SRW", "image/x-samsung-srw", MediaKind.RAW_IMAGE, setOf("srw")),
     PEF("PEF", "image/x-pentax-pef", MediaKind.RAW_IMAGE, setOf("pef")),
+    CR3("CR3", "image/x-canon-cr3", MediaKind.RAW_IMAGE, setOf("cr3")),
+    RAF("RAF", "image/x-fujifilm-raf", MediaKind.RAW_IMAGE, setOf("raf")),
 
     /** A TIFF-structured RAW file whose vendor subtype could not be identified. */
     TIFF_RAW("TIFF_RAW", "image/tiff", MediaKind.RAW_IMAGE, setOf("tif", "tiff")),

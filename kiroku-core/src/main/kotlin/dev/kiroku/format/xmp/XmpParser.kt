@@ -103,11 +103,12 @@ internal object XmpParser {
         val doc =
             try {
                 val start = trimToXml(bytes)
+                val end = xmlEnd(bytes, start)
                 newBuilderFactory().newDocumentBuilder().apply { setErrorHandler(SilentErrors) }.parse(
                     ByteArrayInputStream(
                         bytes,
                         start,
-                        bytes.size - start,
+                        end - start,
                     ),
                 )
             } catch (e: Exception) {
@@ -242,6 +243,19 @@ internal object XmpParser {
         // UTF-16 packets: keep the code-unit alignment so the parser can detect the encoding.
         if (i > 0 && b[i - 1] == 0.toByte() && (i - 1) % 2 == 0) return i - 1
         return i
+    }
+
+    /**
+     * Ends the parse after the last `>`: cameras (for example Fujifilm) pad packets with NUL bytes after
+     * `<?xpacket end='w'?>`, which XML parsers reject as content after the document. A UTF-16LE packet keeps the
+     * zero byte that completes its last code unit.
+     */
+    private fun xmlEnd(b: ByteArray, start: Int): Int {
+        var i = b.size - 1
+        while (i >= start && b[i] != '>'.code.toByte()) i--
+        if (i < start) return b.size
+        val utf16le = start + 1 < b.size && b[start] == '<'.code.toByte() && b[start + 1] == 0.toByte()
+        return if (utf16le && i + 1 < b.size) i + 2 else i + 1
     }
 
     private fun newBuilderFactory(): DocumentBuilderFactory = DocumentBuilderFactory.newInstance().apply {

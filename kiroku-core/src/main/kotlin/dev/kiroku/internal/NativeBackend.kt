@@ -12,6 +12,7 @@ import dev.kiroku.format.hevc.HevcParser
 import dev.kiroku.format.isobmff.IsoBmffParser
 import dev.kiroku.format.jpeg.JpegParser
 import dev.kiroku.format.png.PngParser
+import dev.kiroku.format.raf.RafParser
 import dev.kiroku.format.riff.RiffParser
 import dev.kiroku.format.tiff.TiffReader
 import dev.kiroku.io.FileSource
@@ -34,7 +35,7 @@ internal class NativeBackend : MetadataBackend {
     override val metadataFamilies: Set<String> =
         setOf(
             "EXIF", "TIFF", "GPS", "Interop", "MakerNotes", "XMP", "IPTC", "Photoshop", "ICC_Profile", "JFIF", "MPF",
-            "PNG", "GIF", "BMP", "RIFF", "WebP", "AVI", "WAV", "BWF", "iXML", "QuickTime", "ISOBMFF", "HEIF", "Matroska", "H265",
+            "PNG", "GIF", "BMP", "RIFF", "WebP", "AVI", "WAV", "BWF", "iXML", "QuickTime", "ISOBMFF", "HEIF", "Matroska", "H265", "RAF",
         )
 
     override fun mode(config: MetadataConfig): BackendMode = BackendMode.ALWAYS
@@ -63,8 +64,10 @@ internal class NativeBackend : MetadataBackend {
                     -> TiffReader(ctx, src, "TIFF").parse()
 
                     MediaFormat.HEIF, MediaFormat.HEIC, MediaFormat.AVIF, MediaFormat.MP4, MediaFormat.MOV, MediaFormat.M4A,
-                    MediaFormat.THREE_GP,
+                    MediaFormat.THREE_GP, MediaFormat.CR3,
                     -> IsoBmffParser(ctx, src, context.probe.detectedFormat).parse()
+
+                    MediaFormat.RAF -> RafParser.parse(ctx, src)
 
                     MediaFormat.WEBM, MediaFormat.MATROSKA -> MatroskaParser(ctx, src, context.probe.detectedFormat.id).parse()
 

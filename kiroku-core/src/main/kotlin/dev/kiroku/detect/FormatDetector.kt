@@ -50,6 +50,8 @@ internal object FormatDetector {
 
             (at(0, "II") || at(0, "MM")) && TiffReader.readHeader(s) != null -> classifyTiff(s, extension)
 
+            h.size >= 16 && at(0, "FUJIFILMCCD-RAW ") -> image(MediaFormat.RAF)
+
             h.size >= 8 && at(4, "ftyp") -> isoBmff(s)
 
             h.size >= 8 && QT_TOP_LEVEL.any { at(4, it) } -> Detection(MediaFormat.MOV, MediaKind.VIDEO)
@@ -84,7 +86,8 @@ internal object FormatDetector {
         val size = s.u32(0, true).coerceIn(8, 4096)
         val b = s.readAtMost(0, size.toInt())
         if (b.size < 12) return Detection(MediaFormat.MP4, MediaKind.VIDEO)
-        val major = Bytes.fourCC(b, 8)
+        // Brands are four characters padded with spaces ("crx ", "qt  "); compare them trimmed.
+        val major = Bytes.fourCC(b, 8).trim()
         val brands = buildList {
             add(major)
             var p = 16
@@ -113,7 +116,7 @@ internal object FormatDetector {
 
                 major.startsWith("3g") -> MediaFormat.THREE_GP
 
-                major == "crx" -> MediaFormat.UNKNOWN
+                major == "crx" -> MediaFormat.CR3
 
                 "qt" in all && all.none { it in setOf("isom", "mp41", "mp42") } -> MediaFormat.MOV
 

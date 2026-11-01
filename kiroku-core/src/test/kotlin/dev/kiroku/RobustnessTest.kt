@@ -72,6 +72,48 @@ class RobustnessTest {
         }
     }
 
+    /**
+     * CR3 and RAF samples are downloaded, not committed. Their metadata is not all in the first 4 KiB, so corruption
+     * targets the regions the parsers read: the CR3 `moov` box, and the RAF header, JPEG EXIF segment and RAF directory.
+     */
+    @TestFactory
+    fun `CR3 and RAF survive truncation and corruption of their metadata`(): List<DynamicTest> =
+        listOf("canon_eos_r6.cr3", "fujifilm_xs10.raf", "fujifilm_s5000.raf").map { name ->
+            DynamicTest.dynamicTest(name) {
+                val bytes = Files.readAllBytes(Fixtures.ext(name))
+                val regions =
+                    if (name.endsWith(".raf")) {
+                        val dir = java.nio.ByteBuffer.wrap(bytes, 0x5C, 4).int
+                        listOf(0 until 0x94, 0x94 until 0x94 + 65_536, dir until minOf(bytes.size, dir + 4096))
+                    } else {
+                        listOf(0 until minOf(bytes.size, 65_536))
+                    }
+                fun check(r: dev.kiroku.MetadataResult, what: String) = assertTrue(
+                    r.diagnostics.none { it.code == DiagnosticCode.INTERNAL_ERROR || it.code == DiagnosticCode.BACKEND_FAILED },
+                    "$name $what: ${r.diagnostics}",
+                )
+                for (i in 1..30) {
+                    val cut = (bytes.size.toLong() * i / 31).toInt()
+                    val t = tmp.resolve("cut_${cut}_$name")
+                    t.writeBytes(bytes.copyOf(cut))
+                    check(Fixtures.extractor.extract(t), "cut at $cut")
+                    Files.delete(t)
+                }
+                val rnd = Random(name.hashCode().toLong())
+                repeat(25) { round ->
+                    val copy = bytes.copyOf()
+                    repeat(1 + rnd.nextInt(32)) {
+                        val region = regions[rnd.nextInt(regions.size)]
+                        copy[region.first + rnd.nextInt(region.last - region.first + 1)] = rnd.nextInt(256).toByte()
+                    }
+                    val t = tmp.resolve("fuzz_${round}_$name")
+                    t.writeBytes(copy)
+                    check(Fixtures.extractor.extract(t, ExtractionOptions(timeout = Duration.ofSeconds(10))), "round $round")
+                    Files.delete(t)
+                }
+            }
+        }
+
     @TestFactory
     fun `seeded random byte corruption never throws or fails a backend`(): List<DynamicTest> = structural.map { f ->
         DynamicTest.dynamicTest(f.name) {

@@ -7,6 +7,7 @@ import dev.kiroku.model.MediaFormat
 import dev.kiroku.model.MediaKind
 import dev.kiroku.model.Rational
 import dev.kiroku.model.StreamKind
+import dev.kiroku.model.asLong
 import dev.kiroku.testing.Fixtures
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -288,6 +289,56 @@ class AcceptanceTest {
 
     @Nested
     inner class Raw {
+        @Test
+        fun `Canon CR3 is RAW with EXIF, Canon MakerNotes and no video fields`() {
+            // Values checked against ExifTool 13.60.
+            for ((name, model) in listOf("canon_eos_r6.cr3" to "Canon EOS R6", "canon_eos_r6m3_craw.cr3" to "Canon EOS R6 Mark III")) {
+                val r = x(Fixtures.ext(name))
+                val g = r.gallery
+                assertEquals(ExtractionStatus.COMPLETE, r.status, name)
+                assertEquals(MediaKind.RAW_IMAGE, g.mediaKind, name)
+                assertEquals(MediaFormat.CR3.id, g.format, name)
+                assertEquals("Canon", g.camera!!.make)
+                assertEquals(model, g.camera!!.model)
+                assertNull(g.video, "a CR3's image tracks are not a video")
+                assertTrue(r.full.observations.count { it.groupPath == listOf("MakerNotes", "Canon") } > 20, "Canon MakerNote from CMT3")
+            }
+            val r6 = x(Fixtures.ext("canon_eos_r6.cr3")).gallery
+            assertEquals("RF70-200mm F2.8 L IS USM", r6.camera!!.lensModel)
+            assertEquals(100, r6.exposure!!.iso)
+            assertEquals(25.0, r6.exposure!!.apertureFNumber)
+            assertEquals(0.25, r6.exposure!!.exposureTimeSeconds)
+            assertEquals(200.0, r6.exposure!!.focalLengthMm)
+            assertEquals(Instant.parse("2021-05-12T10:21:21.920Z"), r6.capturedAt!!.instant)
+            assertEquals(ZoneOffset.ofHours(2), r6.capturedAt!!.offset)
+            assertEquals(3408 to 2272, r6.dimensions!!.storedWidth to r6.dimensions!!.storedHeight)
+        }
+
+        @Test
+        fun `Fujifilm RAF is RAW with the JPEG's EXIF, Fujifilm MakerNotes and the RAF directory`() {
+            // Values checked against ExifTool 13.60.
+            val r = x(Fixtures.ext("fujifilm_xs10.raf"))
+            val g = r.gallery
+            assertEquals(ExtractionStatus.COMPLETE, r.status, "trailing NUL padding after the XMP packet is tolerated")
+            assertEquals(MediaKind.RAW_IMAGE, g.mediaKind)
+            assertEquals(MediaFormat.RAF.id, g.format)
+            assertEquals("FUJIFILM", g.camera!!.make)
+            assertEquals("X-S10", g.camera!!.model)
+            assertEquals("XF16-80mmF4 R OIS WR", g.camera!!.lensModel)
+            assertEquals(160, g.exposure!!.iso)
+            assertEquals(LocalDateTime.of(2020, 11, 28, 18, 42, 31), g.capturedAt!!.localDateTime)
+            // RawImageCroppedSize, not the 4416x2944 JPEG preview.
+            assertEquals(6240 to 4160, g.dimensions!!.storedWidth to g.dimensions!!.storedHeight)
+            assertTrue(r.full.observations.count { it.groupPath == listOf("MakerNotes", "FujiFilm") } > 20)
+            val rawSize = listOf("RawImageFullWidth", "RawImageFullHeight").map { n -> r.full.find("RAF:FujiIFD:$n").single().value.asLong() }
+            assertEquals(listOf(6384L, 4182L), rawSize)
+            assertEquals("6240x4160", r.full.find("RAF:RAF:RawImageCroppedSize").single().displayValue)
+
+            val old = x(Fixtures.ext("fujifilm_s5000.raf")).gallery
+            assertEquals("FinePix S5000", old.camera!!.model)
+            assertEquals(2816 to 1060, old.dimensions!!.storedWidth to old.dimensions!!.storedHeight)
+        }
+
         @Test
         fun `scenario 6 - representative RAW samples with vendor tags`() {
             data class E(val file: String, val make: String, val model: String, val iso: Int?, val w: Int, val h: Int, val vendor: String)

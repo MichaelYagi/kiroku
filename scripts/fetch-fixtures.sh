@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Downloads full-size CC0 RAW samples from raw.pixls.us into fixtures/external (gitignored) and
 # verifies their SHA-256 checksums. Integration tests that need them skip when they are absent.
-# Total download is about 61 MB.
+# Total download is about 102 MB.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -19,6 +19,10 @@ FILES=(
   "7010|panasonic_lx7.rw2|18dfc3877e944020299635a8c2fad61fca2485b1c9b67645a495ee870a86e599|Panasonic - DMC-LX7 - 3:2.RW2"
   "7317|blackmagic_micro.dng|4c65b8cda205087cfb94d8931811e53e15eb4df538ad67c1b4a3e76c1185b277|Blackmagic - Micro Cinema Camera - 12bit (16:9).dng"
   "2204|canon_5d3_converted.dng|1d77dcc6cdb839b10c1948f0b4471984ab48cf15e973fb77520584cee72b603e|Canon - EOS 5D Mark III - 14bit 14bit (2.3471882640587).dng"
+  "4659|canon_eos_r6.cr3|74abb0a113d075ad9887a058082f40dd2a938c4813a08474d82356f11a027778|Canon - EOS R6 - 3:2.CR3"
+  "8964|canon_eos_r6m3_craw.cr3|7e1a5d84297a52853b0bbe5a5c03a5d4f5b93e00b7020271523240f9cabfe50e|Canon - EOS R6 Mark III - CRAW (3:2).CR3"
+  "2726|fujifilm_s5000.raf|dabd5e74521a6980156be9fd4b88d0c37b0fe4d0e0e6f5c12db8cffff1b76297|Fujifilm - FinePix S5000 - 4:3.RAF"
+  "4190|fujifilm_xs10.raf|9419d1408ebf850395e5dd563beb96309466546252caf541466034c9cb7e9724|Fujifilm - X-S10 - 14bit 14bit compressed (3:2).RAF"
   # Mislabeled upload: a JPEG named .dng. Kept to test signature-first detection.
   "3839|mislabeled_jpeg_as.dng|6492b7e0ac8e012524c0c83606a104cc9bf3b68f30fa60c7b73ffbe4dc584ab1|Samsung - SM-G973U - 16bit 16bit (2.1132075471698).dng"
 )

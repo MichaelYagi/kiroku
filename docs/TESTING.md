@@ -34,7 +34,7 @@ of the key tags for every fixture. Regenerate it with `python3 -I scripts/record
 - `fixtures/media/generated`: made by `scripts/generate-fixtures.sh` with ffmpeg test patterns. Tags are written with
   ExifTool or ffmpeg. CC0. The GPS points are public landmarks.
 - `fixtures/media/exiftool`: real camera test files from the ExifTool distribution. Same licence as Perl.
-- `fixtures/external`: CC0 full-size RAW files from raw.pixls.us. They are downloaded and checksum-verified, not
+- `fixtures/external`: CC0 full-size RAW files from raw.pixls.us (NEF, CR2, CR3, ORF, ARW, RW2, RWL, SRW, RAF, DNG). They are downloaded and checksum-verified, not
   committed. One is a JPEG uploaded with a `.dng` name, and is kept as a mislabel test.
 
 ## Measured results (Linux, WSL2 on NTFS, JDK 17 toolchain, 8 cores, 2026-10-31)
